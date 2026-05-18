@@ -1,19 +1,26 @@
 package dynamitdb
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/megakuul/dynamitdb/filter"
+	"github.com/megakuul/dynamitdb/query"
+)
 
 type User struct {
-	UserId Field `pk:"user" json:"user_id"`
+	UserId       KeyField          `pk:"user" json:"user_id"`
+	Organization DataField[string] `json:"organization"`
 }
 
 type Order struct {
-	UserId  Field `pk:"user" json:"user_id"`
-	OrderId Field `sk:"order" json:"order_id"`
+	UserId  KeyField `pk:"user" json:"user_id"`
+	OrderId KeyField `sk:"order" json:"order_id"`
 }
 
 func TestQuery(t *testing.T) {
-	order := &Order{
-		UserId: Eq("bombaclad"),
+	user := &User{
+		UserId:       query.Eq("123"),
+		Organization: filter.Eq("bombaclad"),
 	}
-	_ = order
+	user.UserId.Value() // panicks
 }

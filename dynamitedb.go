@@ -41,14 +41,10 @@ func New(ctx context.Context, url, bucket string) (*Client, error) {
 	}, nil
 }
 
-type Field interface {
-	query
-}
-
 // Get fetches a single entry from database based on the keypair in v (also writing to v).
 // Requires PK (and if defined by schema SK) to be set in v.
-func (c *Client) Get(ctx context.Context, v any) error {
-	input := reflect.ValueOf(v)
+func (c *Client) Get(ctx context.Context, filter any) error {
+	input := reflect.ValueOf(filter)
 
 	key, err := constructBucketKey(input)
 	if err != nil {
@@ -65,18 +61,18 @@ func (c *Client) Get(ctx context.Context, v any) error {
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(body, v)
+	return json.Unmarshal(body, filter)
 }
 
 // Create inserts the provided structure to the database if not exists.
-func (c *Client) Create(ctx context.Context, v any) error {
-	input := reflect.ValueOf(v)
+func (c *Client) Create(ctx context.Context, value any) error {
+	input := reflect.ValueOf(value)
 
 	key, err := constructBucketKey(input)
 	if err != nil {
 		return err
 	}
-	body, err := json.Marshal(v)
+	body, err := json.Marshal(value)
 	if err != nil {
 		return err
 	}
@@ -93,14 +89,14 @@ func (c *Client) Create(ctx context.Context, v any) error {
 }
 
 // Put inserts the provided structure to the database (replaces previous data).
-func (c *Client) Put(ctx context.Context, v any) error {
-	input := reflect.ValueOf(v)
+func (c *Client) Put(ctx context.Context, value any) error {
+	input := reflect.ValueOf(value)
 
 	key, err := constructBucketKey(input)
 	if err != nil {
 		return err
 	}
-	body, err := json.Marshal(v)
+	body, err := json.Marshal(value)
 	if err != nil {
 		return err
 	}
@@ -135,9 +131,29 @@ func (c *Client) Update(ctx context.Context, v any) error {
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal(originalBody, v)
+
+	var original any
+	if input.Type().Kind() == reflect.Pointer {
+		original = reflect.New(input.Type().Elem()).Interface()
+	} else {
+		original = reflect.New(input.Type()).Interface()
+	}
+	err = json.Unmarshal(originalBody, original)
 	if err != nil {
 		return err
+	}
+
+	for field := range input.Fields() {
+		switch field.Type {
+		case reflect.TypeFor[KeyField]():
+			continue
+		case reflect.TypeFor[DataField[string]]()
+
+		}
+		if field.Type == reflect.TypeFor[KeyField]() {
+		}
+		if field.Type == reflect.TypeFor[DataField[string]]() {
+		}
 	}
 
 	body, err := json.Marshal(v)
