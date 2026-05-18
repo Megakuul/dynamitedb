@@ -1,11 +1,16 @@
+// query KeyFields are used for indexed server side lookups.
+// Query fields should only be used in the context of lookup operations (Get, List, etc.). Calling Value() on them panics.
 package query
 
-func Eq(operand string) *eqQuery {
-	return &eqQuery{id: operand}
+// Eq performs an exact match on the specified key id.
+func Eq(id string) *eqQuery {
+	return &eqQuery{id: id}
 }
 
-func BeginsWith(operand string) *beginsWithQuery {
-	return &beginsWithQuery{prefix: operand}
+// BeginsWith reads all entries with the specified prefix.
+// Using BeginsWith on PK and SK converts the PK to an exact match.
+func BeginsWith(prefix string) *beginsWithQuery {
+	return &beginsWithQuery{prefix: prefix}
 }
 
 type invalid struct{}

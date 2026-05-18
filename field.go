@@ -1,31 +1,14 @@
 package dynamitdb
 
+import "reflect"
+
 type KeyField interface {
 	Value() string
 	Query() (string, bool)
 }
 
-type StringField interface {
-	Value() string
-	Filter(string) bool
-}
-
-type IntField interface {
-	Value() int
-	Filter(int) bool
-}
-
-type FloatField interface {
-	Value() float64
-	Filter(int) bool
-}
-
-type SliceField interface {
-	Value() []string
-	Filter([]string) bool
-}
-
-type MapField interface {
-	Value() map[string]string
-	Filter(map[string]string) bool
+type DataField[T string | int | float64 | []string | map[string]string] interface {
+	Value() T
+	// Update(T) T // TODO implement this for $inc
+	Filter(reflect.Value) bool
 }

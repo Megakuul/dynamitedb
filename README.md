@@ -3,6 +3,16 @@
 
 Simple ST database engine running entirely on S3.
 
+```go
+
+client, err := dynamitedb.New(context.TODO(), "https://mys3endpoint.com", "mys3bucket")
+if err!=nil {
+    return err
+}
+
+// TODO
+```
+
 When should you use it:
 
 - You want to use the SingleTable pattern for your application.

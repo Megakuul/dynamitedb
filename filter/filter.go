@@ -1,15 +1,20 @@
+// filter DataFields are used to filter out data client side (after already loaded).
+// Filter fields should only be used in the context of lookup operations (Get, List, etc.). Calling Value() on them panics.
 package filter
 
 import "reflect"
 
+// Eq checks for an exact match with the operand.
 func Eq[T any](operand T) *eqFilter[T] {
 	return &eqFilter[T]{rhs: reflect.ValueOf(operand)}
 }
 
+// NotEq is just !Eq.
 func NotEq[T any](operand T) *notEqFilter[T] {
 	return &notEqFilter[T]{rhs: reflect.ValueOf(operand)}
 }
 
+// In checks if the database value is inside the provided list.
 func In[T any](operands []T) inFilter[T] {
 	rhsSlice := []reflect.Value{}
 	for _, operand := range operands {
@@ -18,6 +23,7 @@ func In[T any](operands []T) inFilter[T] {
 	return inFilter[T]{rhsSlice: rhsSlice}
 }
 
+// NotIn is just !In.
 func NotIn[T any](operands []T) notInFilter[T] {
 	rhsSlice := []reflect.Value{}
 	for _, operand := range operands {

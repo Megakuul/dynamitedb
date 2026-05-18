@@ -1,3 +1,5 @@
+// key provides the KeyField implementation for raw index values.
+// This structure also dictates the underlying design of the json blobs (therefore it is an external interface that must be versioned!)
 package key
 
 func New(id string) *key {
