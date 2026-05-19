@@ -1,14 +1,18 @@
 package dynamitdb
 
-import "reflect"
+import (
+	"reflect"
+
+	"github.com/megakuul/dynamitdb/types"
+)
 
 type KeyField interface {
 	Value() string
 	Query() (string, bool)
 }
 
-type DataField[T string | int | float64 | []string | map[string]string] interface {
+type DataField[T types.DataConstraint] interface {
 	Value() T
-	// Update(T) T // TODO implement this for $inc
+	Update(T) T
 	Filter(reflect.Value) bool
 }

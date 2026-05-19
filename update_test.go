@@ -6,6 +6,7 @@ import (
 
 	"github.com/megakuul/dynamitdb/data"
 	"github.com/megakuul/dynamitdb/key"
+	"github.com/megakuul/dynamitdb/update"
 )
 
 type Test struct {
@@ -17,6 +18,7 @@ type Test struct {
 	TestFloat  DataField[float64]           `json:"test_float"`
 	TestSlice  DataField[[]string]          `json:"test_slice"`
 	TestMap    DataField[map[string]string] `json:"test_map"`
+	TestBool   DataField[bool]              `json:"test_bool"`
 
 	TestUnmodified DataField[string] `json:"test_unmodified"`
 }
@@ -44,6 +46,7 @@ func TestUpdateModel(t *testing.T) {
 		TestString: data.New("Test"),
 		TestInt:    data.New(1337),
 		TestFloat:  data.New(4.20),
+		TestBool:   data.New(false),
 		TestSlice:  data.New([]string{"bombaclad", "ananas", "banana"}),
 		TestMap:    data.New(map[string]string{"bombaclad": "yes", "ananas": "absolutely", "banana": "yessir"}),
 
@@ -54,20 +57,21 @@ func TestUpdateModel(t *testing.T) {
 		PartId: key.New("000"),
 		SortId: key.New("000"),
 		Nested: &NestedTest{
-			TestString: data.New("Updated Nested Test"),
+			TestString: update.Set("Updated Nested Test"),
 			Nested: NestedNestedTest{
-				TestString: data.New("Updated Nested Nested Test"),
+				TestString: update.Set("Updated Nested Nested Test"),
 			},
 		},
-		TestString: data.New("Updated Test"),
-		TestInt:    data.New(0),
-		TestFloat:  data.New(0.0),
-		TestSlice:  data.New([]string{"update"}),
-		TestMap:    data.New(map[string]string{"updated": "true"}),
+		TestString: update.Set("Updated Test"),
+		TestInt:    update.Mul(2),
+		TestFloat:  update.Inc(1.0),
+		TestBool:   update.Toggle(),
+		TestSlice:  update.Append([]string{"update"}),
+		TestMap:    update.Set(map[string]string{"updated": "true"}),
 	}
 
 	// act
-	updateModel(reflect.ValueOf(original), reflect.ValueOf(update))
+	applyUpdate(reflect.ValueOf(original), reflect.ValueOf(update))
 
 	// assert
 	if original.PartId.Value() != "69" || original.SortId.Value() != "187" {
@@ -80,19 +84,22 @@ func TestUpdateModel(t *testing.T) {
 			"Updated Test",
 		)
 	}
-	if original.TestInt.Value() != 0 {
+	if original.TestInt.Value() != 1337*2 {
 		t.Fatalf("int update does not work properly (got '%v' expected '%v')!",
 			original.TestInt.Value(),
-			0,
+			1337*2,
 		)
 	}
-	if original.TestFloat.Value() != 0.0 {
+	if original.TestFloat.Value() != 4.20+1 {
 		t.Fatalf("float update does not work properly (got '%v' expected '%v')!",
 			original.TestFloat.Value(),
-			0.0,
+			4.20+1,
 		)
 	}
-	if original.TestSlice.Value()[0] != "update" {
+	if !original.TestBool.Value() {
+		t.Fatalf("bool update does not work properly (got 'false' expected 'true')!")
+	}
+	if original.TestSlice.Value()[len(original.TestSlice.Value())-1] != "update" {
 		t.Fatalf("slice update does not work properly (got '%v' expected '%v')!",
 			original.TestSlice.Value()[0],
 			"update",

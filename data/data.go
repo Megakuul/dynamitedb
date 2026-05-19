@@ -2,20 +2,28 @@
 // This structure also dictates the underlying design of the json blobs (therefore it is an external interface that must be versioned!)
 package data
 
-import "reflect"
+import (
+	"reflect"
 
-func New[T any](value T) *data[T] {
+	"github.com/megakuul/dynamitdb/types"
+)
+
+func New[T types.DataConstraint](value T) *data[T] {
 	return &data[T]{data: value}
 }
 
-type invalid struct{}
+type invalid[T types.DataConstraint] struct{}
 
-func (invalid) Filter(reflect.Value) bool {
-	panic("invalid operation: datas are not supported in filter structs")
+func (invalid[T]) Update(T) T {
+	panic("invalid operation: data fields are not supported in update structs")
 }
 
-type data[T any] struct {
-	invalid
+func (invalid[T]) Filter(reflect.Value) bool {
+	panic("invalid operation: data fields are not supported in filter structs")
+}
+
+type data[T types.DataConstraint] struct {
+	invalid[T]
 	data T
 }
 

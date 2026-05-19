@@ -9,6 +9,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/megakuul/dynamitdb/data"
+	"github.com/megakuul/dynamitdb/types"
 )
 
 // Update changes the entry on the database (identified by PK / SK).
@@ -81,19 +83,17 @@ func applyUpdate(original, update reflect.Value) {
 		case reflect.TypeFor[KeyField]():
 			continue
 		case reflect.TypeFor[DataField[string]]():
-			fallthrough
+			applyFieldUpdate[string](original, update, field.Index)
 		case reflect.TypeFor[DataField[int]]():
-			fallthrough
+			applyFieldUpdate[int](original, update, field.Index)
 		case reflect.TypeFor[DataField[float64]]():
-			fallthrough
+			applyFieldUpdate[float64](original, update, field.Index)
+		case reflect.TypeFor[DataField[bool]]():
+			applyFieldUpdate[bool](original, update, field.Index)
 		case reflect.TypeFor[DataField[[]string]]():
-			fallthrough
+			applyFieldUpdate[[]string](original, update, field.Index)
 		case reflect.TypeFor[DataField[map[string]string]]():
-			updateField := update.FieldByIndex(field.Index)
-			if updateField.IsNil() {
-				continue
-			}
-			original.FieldByIndex(field.Index).Set(updateField)
+			applyFieldUpdate[map[string]string](original, update, field.Index)
 		default:
 			if field.Type.Kind() == reflect.Pointer || field.Type.Kind() == reflect.Struct {
 				applyUpdate(
@@ -104,4 +104,19 @@ func applyUpdate(original, update reflect.Value) {
 			continue
 		}
 	}
+}
+
+// applyFieldUpdate applies the defined update operation from "update" to "original".
+func applyFieldUpdate[T types.DataConstraint](original, update reflect.Value, index []int) {
+	updateField, ok := update.FieldByIndex(index).Interface().(DataField[T])
+	if !ok {
+		return
+	}
+	originalField := original.FieldByIndex(index).Interface().(DataField[T])
+	if !ok {
+		return
+	}
+	original.FieldByIndex(index).Set(reflect.ValueOf(
+		data.New(updateField.Update(originalField.Value()))),
+	)
 }
