@@ -11,9 +11,9 @@ import (
 var keySanitizer = regexp.MustCompile("^[A-Za-z0-9._-]{1,100}$")
 
 // constructBucketKey extracts, sanitizes and constructs an s3 bucket key string from the schema.
-func constructBucketKey(schema reflect.Value) (string, error) {
+func constructBucketKey(filter reflect.Value) (string, error) {
 	bucketKey := []string{}
-	partKey, partVal, err := retrievePartKey(schema)
+	partKey, partVal, err := retrievePartKey(filter)
 	if err != nil {
 		return "", err
 	}
@@ -22,7 +22,7 @@ func constructBucketKey(schema reflect.Value) (string, error) {
 	}
 	bucketKey = append(bucketKey, partKey, partVal)
 
-	sortKey, sortVal, err := retrieveSortKey(schema)
+	sortKey, sortVal, err := retrieveSortKey(filter)
 	if err != nil {
 		return "", err
 	}
@@ -37,29 +37,29 @@ func constructBucketKey(schema reflect.Value) (string, error) {
 }
 
 // retrievePartKey extracts the partition key and partition key value from the schema.
-func retrievePartKey(schema reflect.Value) (string, string, error) {
-	for field := range schema.Fields() {
+func retrievePartKey(filter reflect.Value) (string, string, error) {
+	for field := range filter.Fields() {
 		if partKey := field.Tag.Get("pk"); partKey != "" {
-			partVal := schema.FieldByName(field.Name).String()
-			if partVal == "" {
+			partVal, ok := filter.FieldByIndex(field.Index).Interface().(KeyField)
+			if !ok {
 				return "", "", fmt.Errorf("partition key '%s' is unset", partKey)
 			}
-			return partKey, partVal, nil
+			return partKey, partVal.Value(), nil
 		}
 	}
 	return "", "", fmt.Errorf("no partition key found in schema")
 }
 
-// retrievePartKey extracts the sort key and sort key value from the schema.
+// retrieveSortKey extracts the sort key and sort key value from the schema.
 // If no sort key is present it returns an empty string.
-func retrieveSortKey(schema reflect.Value) (string, string, error) {
-	for field := range schema.Fields() {
-		if partKey := field.Tag.Get("sk"); partKey != "" {
-			partVal := schema.FieldByName(field.Name).String()
-			if partVal == "" {
-				return "", "", fmt.Errorf("sort key '%s' is unset", partKey)
+func retrieveSortKey(filter reflect.Value) (string, string, error) {
+	for field := range filter.Fields() {
+		if sortKey := field.Tag.Get("sk"); sortKey != "" {
+			sortVal, ok := filter.FieldByIndex(field.Index).Interface().(KeyField)
+			if !ok {
+				return "", "", fmt.Errorf("sort key '%s' is unset", sortKey)
 			}
-			return partKey, partVal, nil
+			return sortKey, sortVal.Value(), nil
 		}
 	}
 	return "", "", nil

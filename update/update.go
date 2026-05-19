@@ -35,8 +35,8 @@ func Append[T []string](operand T) *appendUpdate[T] {
 }
 
 // Emplace updates the previous map with the provided new kv pairs.
-func Emplace[T []string](operand T) *appendUpdate[T] {
-	return &appendUpdate[T]{new: operand}
+func Emplace[T map[string]string](operand T) *emplaceUpdate[T] {
+	return &emplaceUpdate[T]{new: operand}
 }
 
 type invalid[T types.DataConstraint] struct{}
@@ -99,6 +99,9 @@ type emplaceUpdate[T map[string]string] struct {
 }
 
 func (u emplaceUpdate[T]) Update(original T) T {
+	if original == nil {
+		original = make(T)
+	}
 	maps.Copy(original, u.new)
 	return original
 }

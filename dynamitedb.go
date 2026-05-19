@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"reflect"
 	"time"
@@ -14,14 +13,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-type Client struct {
-	bucket string
+type Bucket struct {
+	name   string
 	client *s3.Client
 }
 
-// New constructs a dynamitdb client to the provided s3 url / bucket.
+// New constructs a dynamitedb bucket to the provided s3 url / bucket.
 // Credentials are loaded with aws sdk (e.g. from env AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY).
-func New(ctx context.Context, url, bucket string) (*Client, error) {
+func New(ctx context.Context, url, bucket string) (*Bucket, error) {
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithHTTPClient(&http.Client{
 		Transport: &http.Transport{
 			MaxIdleConns:        100,
@@ -33,39 +32,16 @@ func New(ctx context.Context, url, bucket string) (*Client, error) {
 		return nil, err
 	}
 
-	return &Client{
-		bucket: bucket,
+	return &Bucket{
+		name: bucket,
 		client: s3.NewFromConfig(cfg, func(o *s3.Options) {
 			o.BaseEndpoint = aws.String(url)
 		}),
 	}, nil
 }
 
-// Get fetches a single entry from database based on the keypair in v (also writing to v).
-// Requires PK (and if defined by schema SK) to be set in v.
-func (c *Client) Get(ctx context.Context, filter any) error {
-	input := reflect.ValueOf(filter)
-
-	key, err := constructBucketKey(input)
-	if err != nil {
-		return err
-	}
-	resp, err := c.client.GetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(c.bucket),
-		Key:    aws.String(key),
-	})
-	if err != nil {
-		return err
-	}
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(body, filter)
-}
-
 // Create inserts the provided structure to the database if not exists.
-func (c *Client) Create(ctx context.Context, value any) error {
+func (c *Bucket) Create(ctx context.Context, value any) error {
 	input := reflect.ValueOf(value)
 
 	key, err := constructBucketKey(input)
@@ -89,7 +65,7 @@ func (c *Client) Create(ctx context.Context, value any) error {
 }
 
 // Put inserts the provided structure to the database (replaces previous data).
-func (c *Client) Put(ctx context.Context, value any) error {
+func (c *Bucket) Put(ctx context.Context, value any) error {
 	input := reflect.ValueOf(value)
 
 	key, err := constructBucketKey(input)

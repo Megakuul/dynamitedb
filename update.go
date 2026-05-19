@@ -112,8 +112,12 @@ func applyFieldUpdate[T types.DataConstraint](original, update reflect.Value, in
 	if !ok {
 		return
 	}
-	originalField := original.FieldByIndex(index).Interface().(DataField[T])
+	originalField, ok := original.FieldByIndex(index).Interface().(DataField[T])
 	if !ok {
+		var new T
+		original.FieldByIndex(index).Set(reflect.ValueOf(
+			data.New(updateField.Update(new))),
+		)
 		return
 	}
 	original.FieldByIndex(index).Set(reflect.ValueOf(

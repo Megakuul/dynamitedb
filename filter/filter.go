@@ -35,7 +35,11 @@ func NotIn[T any](operands []T) notInFilter[T] {
 type invalid[T any] struct{}
 
 func (invalid[T]) Value() T {
-	panic("invalid operation: values are not supported in filter structs")
+	panic("invalid operation: filter fields are not supported in value structs")
+}
+
+func (invalid[T]) Update(T) T {
+	panic("invalid operation: filter fields are not supported in update structs")
 }
 
 type eqFilter[T any] struct {

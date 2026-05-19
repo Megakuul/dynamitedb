@@ -34,7 +34,7 @@ type NestedNestedTest struct {
 	TestString DataField[string] `json:"test_string"`
 }
 
-func TestUpdateModel(t *testing.T) {
+func TestGetModel(t *testing.T) {
 	// prepare
 	original := &Test{
 		PartId: key.New("69"),
