@@ -1,6 +1,4 @@
-// filter DataFields are used to filter out data client side (after already loaded).
-// Filter fields should only be used in the context of lookup operations (Get, List, etc.). Calling Value() on them panics.
-package filter
+package dynamitdb
 
 import "reflect"
 
@@ -32,22 +30,12 @@ func NotIn[T any](operands []T) notInFilter[T] {
 	return notInFilter[T]{rhsSlice: rhsSlice}
 }
 
-type invalid[T any] struct{}
-
-func (invalid[T]) Value() T {
-	panic("invalid operation: filter fields are not supported in value structs")
-}
-
-func (invalid[T]) Update(T) T {
-	panic("invalid operation: filter fields are not supported in update structs")
-}
-
 type eqFilter[T any] struct {
-	invalid[T]
+	dataFallback[T]
 	rhs reflect.Value
 }
 
-func (q eqFilter[T]) Filter(lhs reflect.Value) bool {
+func (q eqFilter[T]) filter(lhs reflect.Value) bool {
 	if lhs.Type() != q.rhs.Type() {
 		return false
 	}
@@ -58,20 +46,20 @@ func (q eqFilter[T]) Filter(lhs reflect.Value) bool {
 }
 
 type notEqFilter[T any] struct {
-	invalid[T]
+	dataFallback[T]
 	rhs reflect.Value
 }
 
-func (q notEqFilter[T]) Filter(lhs reflect.Value) bool {
-	return !(eqFilter[T]{rhs: q.rhs}).Filter(lhs)
+func (q notEqFilter[T]) filter(lhs reflect.Value) bool {
+	return !(eqFilter[T]{rhs: q.rhs}).filter(lhs)
 }
 
 type inFilter[T any] struct {
-	invalid[T]
+	dataFallback[T]
 	rhsSlice []reflect.Value
 }
 
-func (q inFilter[T]) Filter(lhs reflect.Value) bool {
+func (q inFilter[T]) filter(lhs reflect.Value) bool {
 	for _, rhs := range q.rhsSlice {
 		if lhs.Type() != rhs.Type() {
 			continue
@@ -88,10 +76,10 @@ func (q inFilter[T]) Filter(lhs reflect.Value) bool {
 }
 
 type notInFilter[T any] struct {
-	invalid[T]
+	dataFallback[T]
 	rhsSlice []reflect.Value
 }
 
-func (q notInFilter[T]) Filter(lhs reflect.Value) bool {
-	return !(inFilter[T]{rhsSlice: q.rhsSlice}).Filter(lhs)
+func (q notInFilter[T]) filter(lhs reflect.Value) bool {
+	return !(inFilter[T]{rhsSlice: q.rhsSlice}).filter(lhs)
 }

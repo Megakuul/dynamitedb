@@ -1,16 +1,11 @@
-// update DataFields are used to update structures.
-// Update fields should only be used in the context of update operations (update). Calling anything but Update() on them panics.
-package update
+package dynamitdb
 
 import (
 	"maps"
-	"reflect"
-
-	"github.com/megakuul/dynamitdb/types"
 )
 
 // Set simply overwrites the previous value.
-func Set[T types.DataConstraint](operand T) *setUpdate[T] {
+func Set[T dataConstraint](operand T) *setUpdate[T] {
 	return &setUpdate[T]{new: operand}
 }
 
@@ -39,18 +34,8 @@ func Emplace[T map[string]string](operand T) *emplaceUpdate[T] {
 	return &emplaceUpdate[T]{new: operand}
 }
 
-type invalid[T types.DataConstraint] struct{}
-
-func (invalid[T]) Value() T {
-	panic("invalid operation: values are not supported in update structs")
-}
-
-func (invalid[T]) Filter(reflect.Value) bool {
-	panic("invalid operation: filters are not supported in update structs")
-}
-
-type setUpdate[T types.DataConstraint] struct {
-	invalid[T]
+type setUpdate[T dataConstraint] struct {
+	dataFallback[T]
 	new T
 }
 
@@ -59,7 +44,7 @@ func (u setUpdate[T]) Update(original T) T {
 }
 
 type incUpdate[T int | float64] struct {
-	invalid[T]
+	dataFallback[T]
 	new T
 }
 
@@ -68,7 +53,7 @@ func (u incUpdate[T]) Update(original T) T {
 }
 
 type mulUpdate[T int | float64] struct {
-	invalid[T]
+	dataFallback[T]
 	new T
 }
 
@@ -77,7 +62,7 @@ func (u mulUpdate[T]) Update(original T) T {
 }
 
 type toggleUpdate[T bool] struct {
-	invalid[T]
+	dataFallback[T]
 }
 
 func (u toggleUpdate[T]) Update(original T) T {
@@ -85,7 +70,7 @@ func (u toggleUpdate[T]) Update(original T) T {
 }
 
 type appendUpdate[T []string] struct {
-	invalid[T]
+	dataFallback[T]
 	new T
 }
 
@@ -94,7 +79,7 @@ func (u appendUpdate[T]) Update(original T) T {
 }
 
 type emplaceUpdate[T map[string]string] struct {
-	invalid[T]
+	dataFallback[T]
 	new T
 }
 

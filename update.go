@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"reflect"
 
@@ -16,14 +17,16 @@ import (
 // Update changes the entry on the database (identified by PK / SK).
 // For update operations see "Field" API on the schema.
 // Update will modify v to represent the final state of the updated entry.
-func (c *Client) Update(ctx context.Context, v any) error {
-	update := reflect.ValueOf(v)
-	key, err := constructBucketKey(update)
+func Update[T any](ctx context.Context, bucket *Bucket, update *T) error {
+	updateVal := reflect.ValueOf(update)
+	key, exact, err := constructBucketKey(updateVal)
 	if err != nil {
 		return err
+	} else if !exact {
+		return fmt.Errorf("update database call requires exact key match")
 	}
-	originalResp, err := c.client.GetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(c.bucket),
+	originalResp, err := bucket.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(bucket.name),
 		Key:    aws.String(key),
 	})
 	if err != nil {
@@ -34,13 +37,13 @@ func (c *Client) Update(ctx context.Context, v any) error {
 		return err
 	}
 
-	updatedBody, err := updateObject(originalBody, update)
+	updatedBody, err := updateObject(originalBody, updateVal)
 	if err != nil {
 		return err
 	}
 
-	_, err = c.client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket:  aws.String(c.bucket),
+	_, err = bucket.client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket:  aws.String(bucket.name),
 		Key:     aws.String(key),
 		Body:    bytes.NewReader(updatedBody),
 		IfMatch: originalResp.ETag,
@@ -116,11 +119,11 @@ func applyFieldUpdate[T types.DataConstraint](original, update reflect.Value, in
 	if !ok {
 		var new T
 		original.FieldByIndex(index).Set(reflect.ValueOf(
-			data.New(updateField.Update(new))),
+			data.New(updateField.update(new))),
 		)
 		return
 	}
 	original.FieldByIndex(index).Set(reflect.ValueOf(
-		data.New(updateField.Update(originalField.Value()))),
+		data.New(updateField.update(originalField.Value()))),
 	)
 }

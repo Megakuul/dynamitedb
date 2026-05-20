@@ -3,6 +3,7 @@ package dynamitdb
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"reflect"
 
@@ -14,7 +15,34 @@ import (
 // Get fetches a single entry from database based on the filter.
 // If the query finds multiple entries (when using BeginsWith) it returns the first match.
 func Get[T any](ctx context.Context, bucket *Bucket, filter *T) (*T, error) {
-	key, err := constructBucketKey(reflect.ValueOf(filter).Elem())
+	key, exact, err := constructBucketKey(reflect.ValueOf(filter).Elem())
+	if err != nil {
+		return nil, err
+	} else if !exact {
+		return nil, fmt.Errorf("get database call requires exact key match")
+	}
+	resp, err := bucket.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(bucket.name),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		return nil, err
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var output T
+	initModel(reflect.ValueOf(output))
+	err = json.Unmarshal(body, &output)
+	if err != nil {
+		return nil, err
+	}
+	return &output, nil
+}
+
+func Query[T any](ctx context.Context, bucket *Bucket, filter *T) (*T, error) {
+	key, exact, err := constructBucketKey(reflect.ValueOf(filter).Elem())
 	if err != nil {
 		return nil, err
 	}

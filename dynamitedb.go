@@ -1,11 +1,12 @@
 package dynamitdb
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
+	"fmt"
 	"net/http"
 	"reflect"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -18,7 +19,7 @@ type Bucket struct {
 	client *s3.Client
 }
 
-// New constructs a dynamitedb bucket to the provided s3 url / bucket.
+// New constructs a dynamitedb bucket pointing to the provided s3 url / bucket.
 // Credentials are loaded with aws sdk (e.g. from env AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY).
 func New(ctx context.Context, url, bucket string) (*Bucket, error) {
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithHTTPClient(&http.Client{
@@ -40,49 +41,66 @@ func New(ctx context.Context, url, bucket string) (*Bucket, error) {
 	}, nil
 }
 
-// Create inserts the provided structure to the database if not exists.
-func (c *Bucket) Create(ctx context.Context, value any) error {
-	input := reflect.ValueOf(value)
+// TODO if this bottlenecks just write a small whitelist char checker
+var keySanitizer = regexp.MustCompile("^[A-Za-z0-9._-]{1,100}$")
 
-	key, err := constructBucketKey(input)
+// constructBucketKey extracts, sanitizes and constructs an s3 bucket key string from the schema.
+// Returns the raw s3 bucket key and whether it is an exact match or a prefix.
+func constructBucketKey(filter reflect.Value) (string, bool, error) {
+	partKey, partVal, partExact, err := retrievePartKey(filter)
 	if err != nil {
-		return err
+		return "", false, err
 	}
-	body, err := json.Marshal(value)
+	if !keySanitizer.MatchString(partKey) {
+		return "", false, fmt.Errorf("database partition key contains unsafe characters")
+	}
+
+	sortKey, sortVal, sortExact, err := retrieveSortKey(filter)
 	if err != nil {
-		return err
+		return "", false, err
 	}
-	_, err = c.client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket:      aws.String(c.bucket),
-		Key:         aws.String(key),
-		Body:        bytes.NewReader(body),
-		IfNoneMatch: aws.String("*"),
-	})
-	if err != nil {
-		return err
+	if sortKey != "" && !keySanitizer.MatchString(sortKey) {
+		return "", false, fmt.Errorf("database sort key contains unsafe characters")
 	}
-	return nil
+
+	if sortKey == "" {
+		return strings.Join([]string{partKey, partVal}, "/"), partExact, nil
+	} else {
+		// when specifying a sort key the part key is always an exact match
+		return strings.Join([]string{partKey, partVal, sortKey, sortVal}, "/"), sortExact, nil
+	}
 }
 
-// Put inserts the provided structure to the database (replaces previous data).
-func (c *Bucket) Put(ctx context.Context, value any) error {
-	input := reflect.ValueOf(value)
+// retrievePartKey extracts the partition key and partition key value from the schema.
+// Returns partKey, partValue and if it requires an exactMatch.
+func retrievePartKey(filter reflect.Value) (string, string, bool, error) {
+	for field := range filter.Fields() {
+		partKey := field.Tag.Get("pk")
+		if partKey == "" {
+			continue
+		}
+		partVal, ok := filter.FieldByIndex(field.Index).Interface().(KeyField)
+		if !ok {
+			return "", "", false, fmt.Errorf("partition key '%s' is unset", partKey)
+		}
+		segment, exact := partVal.query()
+		return partKey, segment, exact, nil
+	}
+	return "", "", false, fmt.Errorf("no partition key found in schema")
+}
 
-	key, err := constructBucketKey(input)
-	if err != nil {
-		return err
+// retrieveSortKey extracts the sort key and sort key value from the schema.
+// If no sort key is present it returns an empty string.
+func retrieveSortKey(filter reflect.Value) (string, string, bool, error) {
+	for field := range filter.Fields() {
+		if sortKey := field.Tag.Get("sk"); sortKey != "" {
+			sortVal, ok := filter.FieldByIndex(field.Index).Interface().(KeyField)
+			if !ok {
+				return "", "", false, fmt.Errorf("sort key '%s' is unset", sortKey)
+			}
+			segment, exact := sortVal.query()
+			return sortKey, segment, exact, nil
+		}
 	}
-	body, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-	_, err = c.client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(c.bucket),
-		Key:    aws.String(key),
-		Body:   bytes.NewReader(body),
-	})
-	if err != nil {
-		return err
-	}
-	return nil
+	return "", "", false, nil
 }
