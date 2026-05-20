@@ -1,121 +1,127 @@
 package dynamitdb
 
 import (
-	"reflect"
 	"testing"
-
-	"github.com/megakuul/dynamitdb/data"
-	"github.com/megakuul/dynamitdb/key"
-	"github.com/megakuul/dynamitdb/update"
 )
 
-func TestUpdateModel(t *testing.T) {
+func TestModelUpdate(t *testing.T) {
 	// prepare
 	original := &Test{
-		PartId: key.New("69"),
-		SortId: key.New("187"),
+		PartId: Key("69"),
+		SortId: Key("187"),
 		Nested: &NestedTest{
-			TestString: data.New("Nested Test"),
+			TestString: Data("Nested Test"),
 			Nested: NestedNestedTest{
-				TestString: data.New("Nested Nested Test"),
+				TestString: Data("Nested Nested Test"),
 			},
 		},
-		TestString: data.New("Test"),
-		TestInt:    data.New(1337),
-		TestFloat:  data.New(4.20),
-		TestBool:   data.New(false),
-		TestSlice:  data.New([]string{"bombaclad", "ananas", "banana"}),
-		TestMap:    data.New(map[string]string{"bombaclad": "yes", "ananas": "absolutely", "banana": "yessir"}),
+		TestString: Data("Test"),
+		TestInt:    Data(1337),
+		TestFloat:  Data(4.20),
+		TestBool:   Data(false),
+		TestSlice:  Data([]string{"bombaclad", "ananas", "banana"}),
+		TestMap:    Data(map[string]string{"bombaclad": "yes", "ananas": "absolutely", "banana": "yessir"}),
 
-		TestUnmodified: data.New("unmodified"),
+		TestUnmodified: Data("unmodified"),
 	}
 
 	update := &Test{
-		PartId: key.New("000"),
-		SortId: key.New("000"),
+		PartId: Key("000"),
+		SortId: Key("000"),
 		Nested: &NestedTest{
-			TestString: update.Set("Updated Nested Test"),
+			TestString: Set("Updated Nested Test"),
 			Nested: NestedNestedTest{
-				TestString: update.Set("Updated Nested Nested Test"),
+				TestString: Set("Updated Nested Nested Test"),
 			},
 		},
-		TestString: update.Set("Updated Test"),
-		TestInt:    update.Mul(2),
-		TestFloat:  update.Inc(1.0),
-		TestBool:   update.Toggle(),
-		TestSlice:  update.Append([]string{"update"}),
-		TestMap:    update.Set(map[string]string{"updated": "true"}),
+		TestString: Set("Updated Test"),
+		TestInt:    Mul(2),
+		TestFloat:  Inc(1.0),
+		TestBool:   Toggle(),
+		TestSlice:  Append([]string{"update"}),
+		TestMap:    Set(map[string]string{"updated": "true"}),
 
-		TestNil: update.Set("modified"),
-		TestNilMap: update.Emplace(map[string]string{
+		TestNil: Set("modified"),
+		TestNilMap: Emplace(map[string]string{
 			"modified": "true",
 		}),
 	}
 
 	// act
-	applyUpdate(reflect.ValueOf(original), reflect.ValueOf(update))
+	rawOriginal, err := serialize(original)
+	if err != nil {
+		t.Fatalf("failed to serialize original structure: %v", err)
+	}
+	rawUpdated, err := updateObject(rawOriginal, update)
+	if err != nil {
+		t.Fatalf("failed to update structure: %v", err)
+	}
+	updated, err := deserialize[Test](rawUpdated)
+	if err != nil {
+		t.Fatalf("failed to deserialize updated structure: %v", err)
+	}
 
 	// assert
-	if original.PartId.Value() != "69" || original.SortId.Value() != "187" {
+	if updated.PartId.Value() != "69" || updated.SortId.Value() != "187" {
 		t.Fatalf("updateModel modified keyFields this is not allowed!")
 	}
 
-	if original.TestString.Value() != "Updated Test" {
+	if updated.TestString.Value() != "Updated Test" {
 		t.Fatalf("string update does not work properly (got '%v' expected '%v')!",
-			original.TestString.Value(),
+			updated.TestString.Value(),
 			"Updated Test",
 		)
 	}
-	if original.TestInt.Value() != 1337*2 {
+	if updated.TestInt.Value() != 1337*2 {
 		t.Fatalf("int update does not work properly (got '%v' expected '%v')!",
-			original.TestInt.Value(),
+			updated.TestInt.Value(),
 			1337*2,
 		)
 	}
-	if original.TestFloat.Value() != 4.20+1 {
+	if updated.TestFloat.Value() != 4.20+1 {
 		t.Fatalf("float update does not work properly (got '%v' expected '%v')!",
-			original.TestFloat.Value(),
+			updated.TestFloat.Value(),
 			4.20+1,
 		)
 	}
-	if !original.TestBool.Value() {
+	if !updated.TestBool.Value() {
 		t.Fatalf("bool update does not work properly (got 'false' expected 'true')!")
 	}
-	if original.TestSlice.Value()[len(original.TestSlice.Value())-1] != "update" {
+	if updated.TestSlice.Value()[len(updated.TestSlice.Value())-1] != "update" {
 		t.Fatalf("slice update does not work properly (got '%v' expected '%v')!",
-			original.TestSlice.Value()[0],
+			updated.TestSlice.Value()[0],
 			"update",
 		)
 	}
-	if original.TestMap.Value()["updated"] != "true" {
+	if updated.TestMap.Value()["updated"] != "true" {
 		t.Fatalf("map update does not work properly (got '%v' expected '%v')!",
-			original.TestMap.Value()["updated"],
+			updated.TestMap.Value()["updated"],
 			"true",
 		)
 	}
 
-	if original.TestUnmodified.Value() != "unmodified" {
+	if updated.TestUnmodified.Value() != "unmodified" {
 		t.Fatalf("original field that should not be updated was updated (got '%v' expected '%v')!",
-			original.TestUnmodified.Value(),
+			updated.TestUnmodified.Value(),
 			"unmodified",
 		)
 	}
-	if original.TestNil.Value() != "modified" {
+	if updated.TestNil.Value() != "modified" {
 		t.Fatalf("original nil field that should be updated was not updated (got '%v' expected '%v')!",
-			original.TestNil.Value(),
+			updated.TestNil.Value(),
 			"modified",
 		)
 	}
-	if original.TestNilMap.Value()["modified"] != "true" {
+	if updated.TestNilMap.Value()["modified"] != "true" {
 		t.Fatalf("map update does not work properly (got '%v' expected '%v')!",
-			original.TestNilMap.Value()["modified"],
+			updated.TestNilMap.Value()["modified"],
 			"true",
 		)
 	}
 
-	if original.Nested.Nested.TestString.Value() != "Updated Nested Nested Test" {
+	if updated.Nested.Nested.TestString.Value() != "Updated Nested Nested Test" {
 		t.Fatalf("nested structural data was not updated properly (got '%v' expected '%v')!",
-			original.Nested.Nested.TestString.Value(),
+			updated.Nested.Nested.TestString.Value(),
 			"Updated Nested Nested Test",
 		)
 	}

@@ -3,23 +3,21 @@ package dynamitdb
 import (
 	"bytes"
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"reflect"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/megakuul/dynamitdb/data"
-	"github.com/megakuul/dynamitdb/types"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 // Update changes the entry on the database (identified by PK / SK).
 // For update operations see "Field" API on the schema.
 // Update will modify v to represent the final state of the updated entry.
 func Update[T any](ctx context.Context, bucket *Bucket, update *T) error {
-	updateVal := reflect.ValueOf(update)
-	key, exact, err := constructBucketKey(updateVal)
+	key, exact, err := constructBucketKey(reflect.ValueOf(update))
 	if err != nil {
 		return err
 	} else if !exact {
@@ -30,6 +28,9 @@ func Update[T any](ctx context.Context, bucket *Bucket, update *T) error {
 		Key:    aws.String(key),
 	})
 	if err != nil {
+		if _, ok := errors.AsType[*types.NotFound](err); ok {
+			return ErrNotFound
+		}
 		return err
 	}
 	originalBody, err := io.ReadAll(originalResp.Body)
@@ -37,7 +38,7 @@ func Update[T any](ctx context.Context, bucket *Bucket, update *T) error {
 		return err
 	}
 
-	updatedBody, err := updateObject(originalBody, updateVal)
+	updatedBody, err := updateObject(originalBody, update)
 	if err != nil {
 		return err
 	}
@@ -55,20 +56,14 @@ func Update[T any](ctx context.Context, bucket *Bucket, update *T) error {
 }
 
 // updateObject parses a raw database object blob applies the update and returns the serialized final blob.
-func updateObject(originalBody []byte, update reflect.Value) ([]byte, error) {
-	var original reflect.Value
-	if update.Type().Kind() == reflect.Pointer {
-		original = reflect.New(update.Type().Elem())
-	} else {
-		original = reflect.New(update.Type())
-	}
-	err := json.Unmarshal(originalBody, original.Interface())
+func updateObject[T any](originalBody []byte, update *T) ([]byte, error) {
+	original, err := deserialize[T](originalBody)
 	if err != nil {
 		return nil, err
 	}
-	applyUpdate(original, update)
+	applyUpdate(reflect.ValueOf(original), reflect.ValueOf(update))
 
-	return json.Marshal(original.Interface())
+	return serialize(original)
 }
 
 // applyUpdate traverses the update structure and applies supported non-nil
@@ -110,7 +105,7 @@ func applyUpdate(original, update reflect.Value) {
 }
 
 // applyFieldUpdate applies the defined update operation from "update" to "original".
-func applyFieldUpdate[T types.DataConstraint](original, update reflect.Value, index []int) {
+func applyFieldUpdate[T dataConstraint](original, update reflect.Value, index []int) {
 	updateField, ok := update.FieldByIndex(index).Interface().(DataField[T])
 	if !ok {
 		return
@@ -119,11 +114,11 @@ func applyFieldUpdate[T types.DataConstraint](original, update reflect.Value, in
 	if !ok {
 		var new T
 		original.FieldByIndex(index).Set(reflect.ValueOf(
-			data.New(updateField.update(new))),
+			Data(updateField.update(new))),
 		)
 		return
 	}
 	original.FieldByIndex(index).Set(reflect.ValueOf(
-		data.New(updateField.update(originalField.Value()))),
+		Data(updateField.update(originalField.Value()))),
 	)
 }

@@ -36,3 +36,16 @@ type key struct {
 func (v key) Value() string {
 	return v.key
 }
+
+func (v *key) UnmarshalJSON(data []byte) error {
+	newKey, err := deserialize[string](data)
+	if err != nil {
+		return err
+	}
+	v.key = *newKey
+	return nil
+}
+
+func (v key) MarshalJSON() ([]byte, error) {
+	return serialize(v.key)
+}

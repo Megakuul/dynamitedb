@@ -3,7 +3,6 @@ package dynamitdb
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 
@@ -21,7 +20,7 @@ func Put[T any](ctx context.Context, bucket *Bucket, model *T) error {
 	} else if !exact {
 		return fmt.Errorf("put database call requires exact key match")
 	}
-	body, err := json.Marshal(model)
+	body, err := serialize(model)
 	if err != nil {
 		return err
 	}

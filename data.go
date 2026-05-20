@@ -1,6 +1,8 @@
 package dynamitdb
 
-import "reflect"
+import (
+	"reflect"
+)
 
 // dataConstraint simply wraps all supported dynamite types to avoid boilerplate.
 type dataConstraint interface {
@@ -49,4 +51,17 @@ type data[T dataConstraint] struct {
 
 func (v data[T]) Value() T {
 	return v.data
+}
+
+func (v *data[T]) UnmarshalJSON(data []byte) error {
+	newKey, err := deserialize[T](data)
+	if err != nil {
+		return err
+	}
+	v.data = *newKey
+	return nil
+}
+
+func (v data[T]) MarshalJSON() ([]byte, error) {
+	return serialize(v.data)
 }

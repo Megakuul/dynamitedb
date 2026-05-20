@@ -39,7 +39,7 @@ type setUpdate[T dataConstraint] struct {
 	new T
 }
 
-func (u setUpdate[T]) Update(original T) T {
+func (u setUpdate[T]) update(original T) T {
 	return u.new
 }
 
@@ -48,7 +48,7 @@ type incUpdate[T int | float64] struct {
 	new T
 }
 
-func (u incUpdate[T]) Update(original T) T {
+func (u incUpdate[T]) update(original T) T {
 	return u.new + original
 }
 
@@ -57,7 +57,7 @@ type mulUpdate[T int | float64] struct {
 	new T
 }
 
-func (u mulUpdate[T]) Update(original T) T {
+func (u mulUpdate[T]) update(original T) T {
 	return u.new * original
 }
 
@@ -65,7 +65,7 @@ type toggleUpdate[T bool] struct {
 	dataFallback[T]
 }
 
-func (u toggleUpdate[T]) Update(original T) T {
+func (u toggleUpdate[T]) update(original T) T {
 	return !original
 }
 
@@ -74,7 +74,7 @@ type appendUpdate[T []string] struct {
 	new T
 }
 
-func (u appendUpdate[T]) Update(original T) T {
+func (u appendUpdate[T]) update(original T) T {
 	return append(original, u.new...)
 }
 
@@ -83,7 +83,7 @@ type emplaceUpdate[T map[string]string] struct {
 	new T
 }
 
-func (u emplaceUpdate[T]) Update(original T) T {
+func (u emplaceUpdate[T]) update(original T) T {
 	if original == nil {
 		original = make(T)
 	}
