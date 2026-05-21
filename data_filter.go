@@ -19,31 +19,36 @@ func NotEq[T any](operand T) *notEqFilter[T] {
 
 // In checks if the database value is inside the provided list.
 // Functionally equivalent to Eq but just with an operand for loop.
-func In[T any](operands []T) inFilter[T] {
+func In[T any](operands ...T) inFilter[T] {
 	rhsSlice := make([]reflect.Value, len(operands))
-	for _, operand := range operands {
-		rhsSlice = append(rhsSlice, reflect.ValueOf(operand))
+	for i, operand := range operands {
+		rhsSlice[i] = reflect.ValueOf(operand)
 	}
 	return inFilter[T]{rhsSlice: rhsSlice}
 }
 
 // NotIn is just !In.
-func NotIn[T any](operands []T) notInFilter[T] {
+func NotIn[T any](operands ...T) notInFilter[T] {
 	rhsSlice := make([]reflect.Value, len(operands))
-	for _, operand := range operands {
-		rhsSlice = append(rhsSlice, reflect.ValueOf(operand))
+	for i, operand := range operands {
+		rhsSlice[i] = reflect.ValueOf(operand)
 	}
 	return notInFilter[T]{rhsSlice: rhsSlice}
 }
 
-// Contains checks if the string or slice contains the operand.
-func Contains(operand string) *containsFilter {
-	return &containsFilter{search: operand}
+// Includes checks if the string contains the operand.
+func Includes[T string](operand string) *includesFilter[T] {
+	return &includesFilter[T]{search: operand}
+}
+
+// Contains checks if the slice contains all of the operands.
+func Contains[T []string](operands ...string) *containsFilter[T] {
+	return &containsFilter[T]{searches: operands}
 }
 
 // Has checks if the map contains the specified key value pair.
-func Has(key, value string) *hasFilter {
-	return &hasFilter{key: key, value: value}
+func Has[T map[string]string](key, value string) *hasFilter[T] {
+	return &hasFilter[T]{key: key, value: value}
 }
 
 // GreaterThan compares exactly what it says.
@@ -121,29 +126,38 @@ func (q notInFilter[T]) filter(lhs reflect.Value) bool {
 	return !(inFilter[T]{rhsSlice: q.rhsSlice}).filter(lhs)
 }
 
-type containsFilter struct {
-	dataFallback[string]
+type includesFilter[T string] struct {
+	dataFallback[T]
 	search string
 }
 
-func (q containsFilter) filter(lhs reflect.Value) bool {
-	switch lhs.Kind() {
-	case reflect.String:
-		return strings.Contains(lhs.String(), q.search)
-	case reflect.Slice:
-		if slice, ok := lhs.Interface().([]string); ok {
-			return slices.Contains(slice, q.search)
+func (q includesFilter[T]) filter(lhs reflect.Value) bool {
+	return lhs.Kind() == reflect.String && strings.Contains(lhs.String(), q.search)
+}
+
+type containsFilter[T []string] struct {
+	dataFallback[T]
+	searches []string
+}
+
+func (q containsFilter[T]) filter(lhs reflect.Value) bool {
+	if slice, _ := lhs.Interface().([]string); slice != nil {
+		for _, search := range q.searches {
+			if !slices.Contains(slice, search) {
+				return false
+			}
 		}
+		return true
 	}
 	return false
 }
 
-type hasFilter struct {
-	dataFallback[string]
+type hasFilter[T map[string]string] struct {
+	dataFallback[T]
 	key, value string
 }
 
-func (q hasFilter) filter(lhs reflect.Value) bool {
+func (q hasFilter[T]) filter(lhs reflect.Value) bool {
 	hashmap, _ := lhs.Interface().(map[string]string)
 	return hashmap != nil && hashmap[q.key] == q.value
 }

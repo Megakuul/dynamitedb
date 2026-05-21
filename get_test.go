@@ -50,7 +50,18 @@ func TestModelFilter(t *testing.T) {
 		TestUnmodified: NotEq("modified"),
 	}
 
-	failFilterNested := &Test{
+	passOpFilter := &Test{
+		PartId:         Key("69"),
+		SortId:         Key("187"),
+		TestString:     Includes("es"),
+		TestInt:        GreaterThan(1336),
+		TestFloat:      LessOrEqThan(4.20),
+		TestSlice:      Contains("bombaclad", "ananas"),
+		TestMap:        Has("ananas", "absolutely"),
+		TestUnmodified: In("ananas", "unmodified", "anotherone"),
+	}
+
+	failNestedFilter := &Test{
 		PartId: Key("69"),
 		SortId: Key("187"),
 		Nested: &NestedTest{
@@ -60,19 +71,34 @@ func TestModelFilter(t *testing.T) {
 			},
 		},
 	}
-
-	failFilterSlice := &Test{
+	failInFilter := &Test{
+		PartId:    Key("69"),
+		SortId:    Key("187"),
+		TestSlice: In([]string{"test1"}, []string{"bombacladdd", "ananas", "banana"}, []string{"test2"}),
+	}
+	failSliceFilter := &Test{
 		PartId:     Key("69"),
 		SortId:     Key("187"),
 		TestString: Eq("Test"),
 		TestSlice:  Eq([]string{"bombacladdd", "ananas", "banana"}),
 	}
-
-	failFilterMap := &Test{
+	failContainsFilter := &Test{
+		PartId:     Key("69"),
+		SortId:     Key("187"),
+		TestString: Eq("Test"),
+		TestSlice:  Contains("bombacladdd"),
+	}
+	failMapFilter := &Test{
 		PartId:     Key("69"),
 		SortId:     Key("187"),
 		TestString: Eq("Test"),
 		TestMap:    Eq(map[string]string{"bombaclad": "no", "ananas": "absolutely", "banana": "yessir"}),
+	}
+	failHasFilter := &Test{
+		PartId:     Key("69"),
+		SortId:     Key("187"),
+		TestString: Eq("Test"),
+		TestMap:    Has("bombaclad", "no"),
 	}
 
 	// assert
@@ -84,15 +110,31 @@ func TestModelFilter(t *testing.T) {
 		t.Fatalf("eq filter that should pass didn't pass")
 	}
 
-	if checkFilter(reflect.ValueOf(original), reflect.ValueOf(failFilterNested)) {
+	if !checkFilter(reflect.ValueOf(original), reflect.ValueOf(passOpFilter)) {
+		t.Fatalf("operation filter that should pass didn't pass")
+	}
+
+	if checkFilter(reflect.ValueOf(original), reflect.ValueOf(failNestedFilter)) {
 		t.Fatalf("nested eq filter that shouldn't pass did pass")
 	}
 
-	if checkFilter(reflect.ValueOf(original), reflect.ValueOf(failFilterSlice)) {
+	if checkFilter(reflect.ValueOf(original), reflect.ValueOf(failInFilter)) {
+		t.Fatalf("in filter that shouldn't pass did pass")
+	}
+
+	if checkFilter(reflect.ValueOf(original), reflect.ValueOf(failSliceFilter)) {
 		t.Fatalf("slice filter that shouldn't pass did pass")
 	}
 
-	if checkFilter(reflect.ValueOf(original), reflect.ValueOf(failFilterMap)) {
+	if checkFilter(reflect.ValueOf(original), reflect.ValueOf(failContainsFilter)) {
+		t.Fatalf("contains filter that shouldn't pass did pass")
+	}
+
+	if checkFilter(reflect.ValueOf(original), reflect.ValueOf(failMapFilter)) {
 		t.Fatalf("map filter that shouldn't pass did pass")
+	}
+
+	if checkFilter(reflect.ValueOf(original), reflect.ValueOf(failHasFilter)) {
+		t.Fatalf("has filter that shouldn't pass did pass")
 	}
 }
