@@ -16,12 +16,18 @@ import (
 // Update changes the entry on the database (identified by PK / SK).
 // For update operations see "Field" API on the schema.
 // Update will modify v to represent the final state of the updated entry.
-func Update[T any](ctx context.Context, bucket *Bucket, update *T) error {
-	key, exact, err := constructBucketKey(reflect.ValueOf(update))
+func Update[T any](ctx context.Context, bucket *Bucket, update *T, opts ...Option) error {
+	key, exact, err := constructBucketKey(reflect.ValueOf(update).Elem())
 	if err != nil {
 		return err
 	} else if !exact {
 		return fmt.Errorf("update database call requires exact key match")
+	}
+	options := &options{
+		expires: nil,
+	}
+	for _, opt := range opts {
+		opt(options)
 	}
 	originalResp, err := bucket.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(bucket.name),
@@ -48,6 +54,7 @@ func Update[T any](ctx context.Context, bucket *Bucket, update *T) error {
 		Key:     aws.String(key),
 		Body:    bytes.NewReader(updatedBody),
 		IfMatch: originalResp.ETag,
+		Expires: options.expires,
 	})
 	if err != nil {
 		return err

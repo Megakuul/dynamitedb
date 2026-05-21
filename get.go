@@ -49,19 +49,9 @@ func Get[T any](ctx context.Context, bucket *Bucket, filter *T) (*T, error) {
 	return output, nil
 }
 
-// QueryOptions defines an additional configuration for queries.
-type QueryOptions[T any] struct {
-	// specifies the limit of elements to return.
-	// caution: even with a limit of 10 Query() will scan million of entries if it finds no filter matches.
-	Limit int
-	// StartAfter specifies an item from where to start querying (useful for pagination).
-	// This parameter requires a filter object with an exact key match (other filter props are not checked).
-	StartAfter *T
-}
-
 // Query scans (by filter) and returns all database entries indexed by key prefix matches.
 // Caution: if key prefixes are not properly organized a query can easily rawdog scan millions of entries.
-func Query[T any](ctx context.Context, bucket *Bucket, filter *T, opts QueryOptions[T]) ([]*T, error) {
+func Query[T any](ctx context.Context, bucket *Bucket, filter *T, opts ...Option) ([]*T, error) {
 	filterVal := reflect.ValueOf(filter)
 	key, exact, err := constructBucketKey(filterVal.Elem())
 	if err != nil {
@@ -76,16 +66,12 @@ func Query[T any](ctx context.Context, bucket *Bucket, filter *T, opts QueryOpti
 		return []*T{output}, err
 	}
 
-	var startAfter *string
-	if opts.StartAfter != nil {
-		startAfterVal := reflect.ValueOf(opts.StartAfter)
-		startAfterKey, exact, err := constructBucketKey(startAfterVal.Elem())
-		if err != nil {
-			return nil, err
-		} else if !exact {
-			return nil, fmt.Errorf("startAfter filter requires an exact key match")
-		}
-		startAfter = aws.String(startAfterKey)
+	options := &options{
+		limit:      100000,
+		startAfter: nil,
+	}
+	for _, opt := range opts {
+		opt(options)
 	}
 
 	resultModels := []*T{}
@@ -93,7 +79,7 @@ func Query[T any](ctx context.Context, bucket *Bucket, filter *T, opts QueryOpti
 	paginator := s3.NewListObjectsV2Paginator(bucket.client, &s3.ListObjectsV2Input{
 		Bucket:     aws.String(bucket.name),
 		Prefix:     aws.String(key),
-		StartAfter: startAfter,
+		StartAfter: options.startAfter,
 	})
 
 	for paginator.HasMorePages() {
@@ -102,11 +88,11 @@ func Query[T any](ctx context.Context, bucket *Bucket, filter *T, opts QueryOpti
 			return nil, err
 		}
 		for {
-			if len(page.Contents) < 1 || len(resultModels) >= opts.Limit {
+			if len(page.Contents) < 1 || len(resultModels) >= options.limit {
 				break
 			}
 			nextBatch := int(math.Min(
-				float64(opts.Limit-len(resultModels)),
+				float64(options.limit-len(resultModels)),
 				float64(len(page.Contents)),
 			))
 			batchResults := make([]*T, nextBatch)
@@ -153,8 +139,14 @@ func Query[T any](ctx context.Context, bucket *Bucket, filter *T, opts QueryOpti
 // checkFilter traverses the filter structure and performs all non-nil checks (if any of them fails it returns false).
 // Expects abi compatible objects.
 func checkFilter(original, filter reflect.Value) bool {
-	if original.Kind() == reflect.Pointer {
+	if filter.Kind() == reflect.Pointer {
+		if filter.IsNil() {
+			return true
+		}
 		return checkFilter(original.Elem(), filter.Elem())
+	}
+	if filter.Kind() != reflect.Struct {
+		return true
 	}
 	for field := range filter.Fields() {
 		if !field.IsExported() {
@@ -188,11 +180,11 @@ func checkFilter(original, filter reflect.Value) bool {
 				return false
 			}
 		default:
-			if field.Type.Kind() == reflect.Pointer || field.Type.Kind() == reflect.Struct {
-				return checkFilter(
-					original.FieldByIndex(field.Index),
-					filter.FieldByIndex(field.Index),
-				)
+			if !checkFilter(
+				original.FieldByIndex(field.Index),
+				filter.FieldByIndex(field.Index),
+			) {
+				return false
 			}
 		}
 	}
@@ -205,5 +197,9 @@ func checkFieldFilter[T dataConstraint](original, filter reflect.Value, index []
 	if !ok {
 		return true
 	}
-	return filterField.filter(original)
+	originalField, ok := original.FieldByIndex(index).Interface().(DataField[T])
+	if !ok {
+		return false
+	}
+	return filterField.filter(reflect.ValueOf(originalField.Value()))
 }

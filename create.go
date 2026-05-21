@@ -11,10 +11,8 @@ import (
 )
 
 // Create inserts the provided structure to the database if not exists.
-func Create[T any](ctx context.Context, bucket *Bucket, model *T) error {
-	modelVal := reflect.ValueOf(model)
-
-	key, exact, err := constructBucketKey(modelVal)
+func Create[T any](ctx context.Context, bucket *Bucket, model *T, opts ...Option) error {
+	key, exact, err := constructBucketKey(reflect.ValueOf(model).Elem())
 	if err != nil {
 		return err
 	} else if !exact {
@@ -24,11 +22,18 @@ func Create[T any](ctx context.Context, bucket *Bucket, model *T) error {
 	if err != nil {
 		return err
 	}
+	options := &options{
+		expires: nil,
+	}
+	for _, opt := range opts {
+		opt(options)
+	}
 	_, err = bucket.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(bucket.name),
 		Key:         aws.String(key),
 		Body:        bytes.NewReader(body),
 		IfNoneMatch: aws.String("*"),
+		Expires:     options.expires,
 	})
 	if err != nil {
 		return err

@@ -1,8 +1,13 @@
 package dynamitdb
 
-import "reflect"
+import (
+	"reflect"
+	"slices"
+	"strings"
+)
 
 // Eq checks for an exact match with the operand.
+// For slices and map this enforces a deep equal state.
 func Eq[T any](operand T) *eqFilter[T] {
 	return &eqFilter[T]{rhs: reflect.ValueOf(operand)}
 }
@@ -13,8 +18,9 @@ func NotEq[T any](operand T) *notEqFilter[T] {
 }
 
 // In checks if the database value is inside the provided list.
+// Functionally equivalent to Eq but just with an operand for loop.
 func In[T any](operands []T) inFilter[T] {
-	rhsSlice := []reflect.Value{}
+	rhsSlice := make([]reflect.Value, len(operands))
 	for _, operand := range operands {
 		rhsSlice = append(rhsSlice, reflect.ValueOf(operand))
 	}
@@ -23,11 +29,41 @@ func In[T any](operands []T) inFilter[T] {
 
 // NotIn is just !In.
 func NotIn[T any](operands []T) notInFilter[T] {
-	rhsSlice := []reflect.Value{}
+	rhsSlice := make([]reflect.Value, len(operands))
 	for _, operand := range operands {
 		rhsSlice = append(rhsSlice, reflect.ValueOf(operand))
 	}
 	return notInFilter[T]{rhsSlice: rhsSlice}
+}
+
+// Contains checks if the string or slice contains the operand.
+func Contains(operand string) *containsFilter {
+	return &containsFilter{search: operand}
+}
+
+// Has checks if the map contains the specified key value pair.
+func Has(key, value string) *hasFilter {
+	return &hasFilter{key: key, value: value}
+}
+
+// GreaterThan compares exactly what it says.
+func GreaterThan[T int | float64](operand T) *greaterThanFilter[T] {
+	return &greaterThanFilter[T]{operand: operand}
+}
+
+// GreaterOrEqThan compares exactly what it says.
+func GreaterOrEqThan[T int | float64](operand T) *greaterOrEqThanFilter[T] {
+	return &greaterOrEqThanFilter[T]{operand: operand}
+}
+
+// LessThan compares exactly what it says.
+func LessThan[T int | float64](operand T) *lessThanFilter[T] {
+	return &lessThanFilter[T]{operand: operand}
+}
+
+// LessThanOrEq compares exactly what it says.
+func LessOrEqThan[T int | float64](operand T) *lessOrEqThanFilter[T] {
+	return &lessOrEqThanFilter[T]{operand: operand}
 }
 
 type eqFilter[T any] struct {
@@ -64,13 +100,14 @@ func (q inFilter[T]) filter(lhs reflect.Value) bool {
 		if lhs.Type() != rhs.Type() {
 			continue
 		}
-		if lhs.Comparable() && !rhs.Equal(lhs) {
+		if lhs.Comparable() {
+			if rhs.Equal(lhs) {
+				return true
+			}
 			continue
+		} else if reflect.DeepEqual(rhs.Interface(), lhs.Interface()) {
+			return true
 		}
-		if !reflect.DeepEqual(rhs.Interface(), lhs.Interface()) {
-			continue
-		}
-		return true
 	}
 	return false
 }
@@ -82,4 +119,95 @@ type notInFilter[T any] struct {
 
 func (q notInFilter[T]) filter(lhs reflect.Value) bool {
 	return !(inFilter[T]{rhsSlice: q.rhsSlice}).filter(lhs)
+}
+
+type containsFilter struct {
+	dataFallback[string]
+	search string
+}
+
+func (q containsFilter) filter(lhs reflect.Value) bool {
+	switch lhs.Kind() {
+	case reflect.String:
+		return strings.Contains(lhs.String(), q.search)
+	case reflect.Slice:
+		if slice, ok := lhs.Interface().([]string); ok {
+			return slices.Contains(slice, q.search)
+		}
+	}
+	return false
+}
+
+type hasFilter struct {
+	dataFallback[string]
+	key, value string
+}
+
+func (q hasFilter) filter(lhs reflect.Value) bool {
+	hashmap, _ := lhs.Interface().(map[string]string)
+	return hashmap != nil && hashmap[q.key] == q.value
+}
+
+type greaterThanFilter[T float64 | int] struct {
+	dataFallback[T]
+	operand T
+}
+
+func (q greaterThanFilter[T]) filter(lhs reflect.Value) bool {
+	switch lhs.Kind() {
+	case reflect.Int:
+		return lhs.Int() > int64(q.operand)
+	case reflect.Float64:
+		return lhs.Float() > float64(q.operand)
+	default:
+		return false
+	}
+}
+
+type greaterOrEqThanFilter[T float64 | int] struct {
+	dataFallback[T]
+	operand T
+}
+
+func (q greaterOrEqThanFilter[T]) filter(lhs reflect.Value) bool {
+	switch lhs.Kind() {
+	case reflect.Int:
+		return lhs.Int() >= int64(q.operand)
+	case reflect.Float64:
+		return lhs.Float() >= float64(q.operand)
+	default:
+		return false
+	}
+}
+
+type lessThanFilter[T float64 | int] struct {
+	dataFallback[T]
+	operand T
+}
+
+func (q lessThanFilter[T]) filter(lhs reflect.Value) bool {
+	switch lhs.Kind() {
+	case reflect.Int:
+		return lhs.Int() < int64(q.operand)
+	case reflect.Float64:
+		return lhs.Float() < float64(q.operand)
+	default:
+		return false
+	}
+}
+
+type lessOrEqThanFilter[T float64 | int] struct {
+	dataFallback[T]
+	operand T
+}
+
+func (q lessOrEqThanFilter[T]) filter(lhs reflect.Value) bool {
+	switch lhs.Kind() {
+	case reflect.Int:
+		return lhs.Int() <= int64(q.operand)
+	case reflect.Float64:
+		return lhs.Float() <= float64(q.operand)
+	default:
+		return false
+	}
 }
