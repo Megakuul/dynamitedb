@@ -1,4 +1,4 @@
-module github.com/megakuul/dynamitdb
+module github.com/megakuul/dynamitedb
 
 go 1.26.1
 
@@ -25,4 +25,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.21 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.42.1 // indirect
 	github.com/aws/smithy-go v1.25.1 // indirect
+	github.com/johannesboyne/gofakes3 v0.0.0-20260208201424-4c385a1f6a73 // indirect
+	github.com/ryszard/goskiplist v0.0.0-20150312221310-2dfbae5fcf46 // indirect
+	go.shabbyrobe.org/gocovmerge v0.0.0-20230507111327-fa4f82cfbf4d // indirect
+	golang.org/x/tools v0.8.0 // indirect
 )

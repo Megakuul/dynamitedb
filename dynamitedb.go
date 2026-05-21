@@ -1,4 +1,4 @@
-package dynamitdb
+package dynamitedb
 
 import (
 	"context"
@@ -37,8 +37,17 @@ func New(ctx context.Context, url, bucket string) (*Bucket, error) {
 		name: bucket,
 		client: s3.NewFromConfig(cfg, func(o *s3.Options) {
 			o.BaseEndpoint = aws.String(url)
+			o.UsePathStyle = true
 		}),
 	}, nil
+}
+
+// NewFromClient initializes a dynamitedb bucket from an existing aws s3 sdk client.
+func NewFromClient(client *s3.Client, bucket string) *Bucket {
+	return &Bucket{
+		name:   bucket,
+		client: client,
+	}
 }
 
 // TODO if this bottlenecks just write a small whitelist char checker

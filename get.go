@@ -1,4 +1,4 @@
-package dynamitdb
+package dynamitedb
 
 import (
 	"context"
@@ -30,7 +30,7 @@ func Get[T any](ctx context.Context, bucket *Bucket, filter *T) (*T, error) {
 		Key:    aws.String(key),
 	})
 	if err != nil {
-		if _, ok := errors.AsType[*types.NotFound](err); ok {
+		if _, ok := errors.AsType[*types.NoSuchKey](err); ok {
 			return nil, ErrNotFound
 		}
 		return nil, err

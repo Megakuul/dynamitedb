@@ -1,4 +1,4 @@
-package dynamitdb
+package dynamitedb
 
 // KeyField defines a dynamite index key (initialize with dynamitedb.Key("123")).
 // Tag it with `pk:"user"` to mark partition key or `sk:"order"` for sort key.

@@ -1,4 +1,4 @@
-package dynamitdb
+package dynamitedb
 
 type Test struct {
 	PartId     KeyField                     `pk:"part" json:"part_id"`

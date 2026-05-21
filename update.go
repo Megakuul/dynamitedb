@@ -1,4 +1,4 @@
-package dynamitdb
+package dynamitedb
 
 import (
 	"bytes"
@@ -34,7 +34,7 @@ func Update[T any](ctx context.Context, bucket *Bucket, update *T, opts ...Optio
 		Key:    aws.String(key),
 	})
 	if err != nil {
-		if _, ok := errors.AsType[*types.NotFound](err); ok {
+		if _, ok := errors.AsType[*types.NoSuchKey](err); ok {
 			return ErrNotFound
 		}
 		return err

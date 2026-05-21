@@ -1,4 +1,4 @@
-package dynamitdb
+package dynamitedb
 
 // KeyEq performs an exact match on the specified key id.
 func KeyEq(id string) *eqQuery {

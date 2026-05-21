@@ -1,4 +1,4 @@
-package dynamitdb
+package dynamitedb
 
 import (
 	"maps"
