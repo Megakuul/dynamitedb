@@ -3,6 +3,7 @@ package dynamitedb
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestSerialization(t *testing.T) {
@@ -18,12 +19,14 @@ func TestSerialization(t *testing.T) {
 				TestString: Set("Nested Nested Test"),
 			},
 		},
-		TestString: Set("Test"),
-		TestInt:    Set(1337),
-		TestFloat:  Set(4.20),
-		TestBool:   Set(false),
-		TestSlice:  Set([]string{"bombaclad", "ananas", "banana"}),
-		TestMap:    Set(map[string]string{"bombaclad": "yes", "ananas": "absolutely", "banana": "yessir"}),
+		TestString:   Set("Test"),
+		TestInt:      Set(1337),
+		TestFloat:    Set(4.20),
+		TestBool:     Set(false),
+		TestTime:     Set(time.Now()),
+		TestDuration: Set(time.Second * 3),
+		TestSlice:    Set([]string{"bombaclad", "ananas", "banana"}),
+		TestMap:      Set(map[string]string{"bombaclad": "yes", "ananas": "absolutely", "banana": "yessir"}),
 
 		TestUnmodified: Set("unmodified"),
 	}))

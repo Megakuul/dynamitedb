@@ -137,7 +137,7 @@ type OrderItem struct {
 
 ## Operators
 
-For data manipulation and retrieval there are two different types of "operators": `filter` and `update`.
+For data retrieval and manipulation there are two different types of "operators": `filter` and `update`.
 
 > [!TIP]
 > DynamiteDB treats inserts (`Create`/`Put`) and updates (`Update`) exactly the same. 

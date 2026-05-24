@@ -1,15 +1,19 @@
 package dynamitedb
 
+import "time"
+
 type Test struct {
-	PartId     KeyField                     `pk:"part" json:"part_id"`
-	SortId     KeyField                     `sk:"sort" json:"sort_id"`
-	Nested     *NestedTest                  `json:"nested"`
-	TestString DataField[string]            `json:"test_string"`
-	TestInt    DataField[int]               `json:"test_int"`
-	TestFloat  DataField[float64]           `json:"test_float"`
-	TestSlice  DataField[[]string]          `json:"test_slice"`
-	TestMap    DataField[map[string]string] `json:"test_map"`
-	TestBool   DataField[bool]              `json:"test_bool"`
+	PartId       KeyField                     `pk:"part" json:"part_id"`
+	SortId       KeyField                     `sk:"sort" json:"sort_id"`
+	Nested       *NestedTest                  `json:"nested"`
+	TestString   DataField[string]            `json:"test_string"`
+	TestInt      DataField[int]               `json:"test_int"`
+	TestFloat    DataField[float64]           `json:"test_float"`
+	TestSlice    DataField[[]string]          `json:"test_slice"`
+	TestMap      DataField[map[string]string] `json:"test_map"`
+	TestBool     DataField[bool]              `json:"test_bool"`
+	TestTime     DataField[time.Time]         `json:"test_time"`
+	TestDuration DataField[time.Duration]     `json:"test_duration"`
 
 	TestUnmodified DataField[string]            `json:"test_unmodified"`
 	TestNil        DataField[string]            `json:"test_nil"`

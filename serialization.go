@@ -57,7 +57,7 @@ func initModel(model reflect.Value) {
 		case reflect.TypeFor[DataField[time.Time]]():
 			fieldVal.Set(reflect.ValueOf(newData(time.Time{})))
 		case reflect.TypeFor[DataField[time.Duration]]():
-			fieldVal.Set(reflect.ValueOf(newData(time.Duration{})))
+			fieldVal.Set(reflect.ValueOf(newData(time.Duration(0))))
 		case reflect.TypeFor[DataField[[]string]]():
 			fieldVal.Set(reflect.ValueOf(newData([]string{})))
 		case reflect.TypeFor[DataField[map[string]string]]():

@@ -2,11 +2,15 @@ package dynamitedb
 
 import (
 	"reflect"
+	"slices"
 	"testing"
+	"time"
 )
 
 func TestModelUpdate(t *testing.T) {
 	// prepare
+	now := time.Now()
+
 	original := reflect.New(reflect.TypeFor[Test]())
 	initModel(original)
 	applyUpdate(original, reflect.ValueOf(&Test{
@@ -18,12 +22,14 @@ func TestModelUpdate(t *testing.T) {
 				TestString: Set("Nested Nested Test"),
 			},
 		},
-		TestString: Set("Test"),
-		TestInt:    Set(1337),
-		TestFloat:  Set(4.20),
-		TestBool:   Set(false),
-		TestSlice:  Set([]string{"bombaclad", "ananas", "banana"}),
-		TestMap:    Set(map[string]string{"bombaclad": "yes", "ananas": "absolutely", "banana": "yessir"}),
+		TestString:   Set("Test"),
+		TestInt:      Set(1337),
+		TestFloat:    Set(4.20),
+		TestBool:     Set(false),
+		TestTime:     Set(now),
+		TestDuration: Set(time.Second * 3),
+		TestSlice:    Set([]string{"bombaclad", "ananas", "banana"}),
+		TestMap:      Set(map[string]string{"bombaclad": "yes", "ananas": "absolutely", "banana": "yessir"}),
 
 		TestUnmodified: Set("unmodified"),
 	}))
@@ -37,12 +43,14 @@ func TestModelUpdate(t *testing.T) {
 				TestString: Set("Updated Nested Nested Test"),
 			},
 		},
-		TestString: Set("Updated Test"),
-		TestInt:    Mul(2),
-		TestFloat:  Inc(1.0),
-		TestBool:   Toggle(),
-		TestSlice:  Append([]string{"update"}),
-		TestMap:    Set(map[string]string{"updated": "true"}),
+		TestString:   Set("Updated Test"),
+		TestInt:      Multiply(2),
+		TestFloat:    Increment(1.0),
+		TestBool:     Toggle(),
+		TestTime:     Add(time.Hour),
+		TestDuration: Increment(time.Hour),
+		TestSlice:    Remove("ananas"),
+		TestMap:      Set(map[string]string{"updated": "true"}),
 
 		TestNil: Set("modified"),
 		TestNilMap: Emplace(map[string]string{
@@ -86,11 +94,20 @@ func TestModelUpdate(t *testing.T) {
 	if !updated.TestBool.Value() {
 		t.Fatalf("bool update does not work properly (got 'false' expected 'true')!")
 	}
-	if updated.TestSlice.Value()[len(updated.TestSlice.Value())-1] != "update" {
-		t.Fatalf("slice update does not work properly (got '%v' expected '%v')!",
-			updated.TestSlice.Value()[0],
-			"update",
+	if !updated.TestTime.Value().Equal(now.Add(time.Hour)) {
+		t.Fatalf("time update does not work properly (got '%v' expected '%v')!",
+			updated.TestTime.Value(),
+			now.Add(time.Hour),
 		)
+	}
+	if updated.TestDuration.Value() != time.Second*3+time.Hour {
+		t.Fatalf("duration update does not work properly (got '%v' expected '%v')!",
+			updated.TestDuration.Value(),
+			time.Second*3+time.Hour,
+		)
+	}
+	if slices.Contains(updated.TestSlice.Value(), "ananas") {
+		t.Fatalf("slice update does not work properly (expected value was not removed)!")
 	}
 	if updated.TestMap.Value()["updated"] != "true" {
 		t.Fatalf("map update does not work properly (got '%v' expected '%v')!",
