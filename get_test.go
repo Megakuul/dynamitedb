@@ -7,24 +7,26 @@ import (
 
 func TestModelFilter(t *testing.T) {
 	// prepare
-	original := &Test{
+	original := reflect.New(reflect.TypeFor[Test]())
+	initModel(original)
+	applyUpdate(original, reflect.ValueOf(&Test{
 		PartId: Key("69"),
 		SortId: Key("187"),
 		Nested: &NestedTest{
-			TestString: Data("Nested Test"),
+			TestString: Set("Nested Test"),
 			Nested: NestedNestedTest{
-				TestString: Data("Nested Nested Test"),
+				TestString: Set("Nested Nested Test"),
 			},
 		},
-		TestString: Data("Test"),
-		TestInt:    Data(1337),
-		TestFloat:  Data(4.20),
-		TestBool:   Data(false),
-		TestSlice:  Data([]string{"bombaclad", "ananas", "banana"}),
-		TestMap:    Data(map[string]string{"bombaclad": "yes", "ananas": "absolutely", "banana": "yessir"}),
+		TestString: Set("Test"),
+		TestInt:    Set(1337),
+		TestFloat:  Set(4.20),
+		TestBool:   Set(false),
+		TestSlice:  Set([]string{"bombaclad", "ananas", "banana"}),
+		TestMap:    Set(map[string]string{"bombaclad": "yes", "ananas": "absolutely", "banana": "yessir"}),
 
-		TestUnmodified: Data("unmodified"),
-	}
+		TestUnmodified: Set("unmodified"),
+	}))
 
 	passEmptyFilter := &Test{
 		PartId: Key("69"),
@@ -102,39 +104,39 @@ func TestModelFilter(t *testing.T) {
 	}
 
 	// assert
-	if !checkFilter(reflect.ValueOf(original), reflect.ValueOf(passEmptyFilter)) {
+	if !checkFilter(original, reflect.ValueOf(passEmptyFilter)) {
 		t.Fatalf("empty filter that should pass didn't pass")
 	}
 
-	if !checkFilter(reflect.ValueOf(original), reflect.ValueOf(passEqFilter)) {
+	if !checkFilter(original, reflect.ValueOf(passEqFilter)) {
 		t.Fatalf("eq filter that should pass didn't pass")
 	}
 
-	if !checkFilter(reflect.ValueOf(original), reflect.ValueOf(passOpFilter)) {
+	if !checkFilter(original, reflect.ValueOf(passOpFilter)) {
 		t.Fatalf("operation filter that should pass didn't pass")
 	}
 
-	if checkFilter(reflect.ValueOf(original), reflect.ValueOf(failNestedFilter)) {
+	if checkFilter(original, reflect.ValueOf(failNestedFilter)) {
 		t.Fatalf("nested eq filter that shouldn't pass did pass")
 	}
 
-	if checkFilter(reflect.ValueOf(original), reflect.ValueOf(failInFilter)) {
+	if checkFilter(original, reflect.ValueOf(failInFilter)) {
 		t.Fatalf("in filter that shouldn't pass did pass")
 	}
 
-	if checkFilter(reflect.ValueOf(original), reflect.ValueOf(failSliceFilter)) {
+	if checkFilter(original, reflect.ValueOf(failSliceFilter)) {
 		t.Fatalf("slice filter that shouldn't pass did pass")
 	}
 
-	if checkFilter(reflect.ValueOf(original), reflect.ValueOf(failContainsFilter)) {
+	if checkFilter(original, reflect.ValueOf(failContainsFilter)) {
 		t.Fatalf("contains filter that shouldn't pass did pass")
 	}
 
-	if checkFilter(reflect.ValueOf(original), reflect.ValueOf(failMapFilter)) {
+	if checkFilter(original, reflect.ValueOf(failMapFilter)) {
 		t.Fatalf("map filter that shouldn't pass did pass")
 	}
 
-	if checkFilter(reflect.ValueOf(original), reflect.ValueOf(failHasFilter)) {
+	if checkFilter(original, reflect.ValueOf(failHasFilter)) {
 		t.Fatalf("has filter that shouldn't pass did pass")
 	}
 }

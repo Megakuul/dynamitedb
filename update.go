@@ -121,11 +121,11 @@ func applyFieldUpdate[T dataConstraint](original, update reflect.Value, index []
 	if !ok {
 		var new T
 		original.FieldByIndex(index).Set(reflect.ValueOf(
-			Data(updateField.update(new))),
+			newData(updateField.update(new))),
 		)
 		return
 	}
 	original.FieldByIndex(index).Set(reflect.ValueOf(
-		Data(updateField.update(originalField.Value()))),
+		newData(updateField.update(originalField.Value()))),
 	)
 }

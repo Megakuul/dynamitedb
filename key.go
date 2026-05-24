@@ -16,21 +16,28 @@ type KeyField interface {
 type keyFallback struct{}
 
 func (keyFallback) Value() string {
-	return ""
+	panic("incorrect KeyField usage: query keys cannot be read from")
 }
 
 func (keyFallback) query() (string, bool) {
-	return "", true
+	panic("incorrect KeyField usage: value keys cannot be used for queries (use Key() or KeyPrefix() instead)")
 }
 
-// Key initializes a new partition or sort key.
+// Key performs an exact match on the specified key id.
+// Since keys are immutable this can be used for query and data fields.
 func Key(id string) *key {
 	return &key{key: id}
 }
 
+// internal key interface (defines layout on database).
+// Unlike the data interface it is used for returned and query values since keys are immutable.
 type key struct {
 	keyFallback
 	key string
+}
+
+func (v key) query() (string, bool) {
+	return v.key, true
 }
 
 func (v key) Value() string {

@@ -43,10 +43,14 @@ func Get[T any](ctx context.Context, bucket *Bucket, filter *T) (*T, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !checkFilter(reflect.ValueOf(output), filterVal) {
+	outputVal := reflect.ValueOf(output)
+	if err := injectBucketKey(outputVal.Elem(), key); err != nil {
+		return nil, fmt.Errorf("key writeback failed: %v", err)
+	}
+	if !checkFilter(outputVal, filterVal) {
 		return nil, ErrNotFound
 	}
-	return output, nil
+	return outputVal.Interface().(*T), nil
 }
 
 // Query scans (by filter) and returns all database entries indexed by key prefix matches.
@@ -74,7 +78,7 @@ func Query[T any](ctx context.Context, bucket *Bucket, filter *T, opts ...Option
 		opt(options)
 	}
 
-	resultModels := []*T{}
+	outputModels := []*T{}
 
 	paginator := s3.NewListObjectsV2Paginator(bucket.client, &s3.ListObjectsV2Input{
 		Bucket:     aws.String(bucket.name),
@@ -88,11 +92,11 @@ func Query[T any](ctx context.Context, bucket *Bucket, filter *T, opts ...Option
 			return nil, err
 		}
 		for {
-			if len(page.Contents) < 1 || len(resultModels) >= options.limit {
+			if len(page.Contents) < 1 || len(outputModels) >= options.limit {
 				break
 			}
 			nextBatch := int(math.Min(
-				float64(options.limit-len(resultModels)),
+				float64(options.limit-len(outputModels)),
 				float64(len(page.Contents)),
 			))
 			batchResults := make([]*T, nextBatch)
@@ -110,14 +114,18 @@ func Query[T any](ctx context.Context, bucket *Bucket, filter *T, opts ...Option
 					if err != nil {
 						return err
 					}
-					result, err := deserialize[T](body)
+					output, err := deserialize[T](body)
 					if err != nil {
 						return err
 					}
-					if !checkFilter(reflect.ValueOf(result), filterVal) {
+					outputVal := reflect.ValueOf(output)
+					if err := injectBucketKey(outputVal.Elem(), *object.Key); err != nil {
+						return fmt.Errorf("key writeback failed: %v", err)
+					}
+					if !checkFilter(outputVal, filterVal) {
 						return nil
 					}
-					batchResults[i] = result
+					batchResults[i] = outputVal.Interface().(*T)
 					return nil
 				})
 			}
@@ -126,14 +134,14 @@ func Query[T any](ctx context.Context, bucket *Bucket, filter *T, opts ...Option
 			}
 			for _, result := range batchResults {
 				if result != nil {
-					resultModels = append(resultModels, result)
+					outputModels = append(outputModels, result)
 				}
 			}
 			page.Contents = page.Contents[nextBatch:]
 		}
 	}
 
-	return resultModels, nil
+	return outputModels, nil
 }
 
 // checkFilter traverses the filter structure and performs all non-nil checks (if any of them fails it returns false).

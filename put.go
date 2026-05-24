@@ -12,13 +12,16 @@ import (
 
 // Put inserts the provided structure to the database (replaces previous data).
 func Put[T any](ctx context.Context, bucket *Bucket, model *T, opts ...Option) error {
-	key, exact, err := constructBucketKey(reflect.ValueOf(model).Elem())
+	modelVal := reflect.ValueOf(model)
+	key, exact, err := constructBucketKey(modelVal.Elem())
 	if err != nil {
 		return err
 	} else if !exact {
 		return fmt.Errorf("put database call requires exact key match")
 	}
-	body, err := serialize(model)
+	insert := reflect.New(reflect.TypeFor[T]())
+	applyUpdate(insert, modelVal)
+	body, err := serialize(insert.Interface().(*T))
 	if err != nil {
 		return err
 	}

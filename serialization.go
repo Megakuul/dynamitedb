@@ -46,17 +46,17 @@ func initModel(model reflect.Value) {
 		case reflect.TypeFor[KeyField]():
 			fieldVal.Set(reflect.ValueOf(Key("")))
 		case reflect.TypeFor[DataField[string]]():
-			fieldVal.Set(reflect.ValueOf(Data("")))
+			fieldVal.Set(reflect.ValueOf(newData("")))
 		case reflect.TypeFor[DataField[int]]():
-			fieldVal.Set(reflect.ValueOf(Data(0)))
+			fieldVal.Set(reflect.ValueOf(newData(0)))
 		case reflect.TypeFor[DataField[float64]]():
-			fieldVal.Set(reflect.ValueOf(Data(0.0)))
+			fieldVal.Set(reflect.ValueOf(newData(0.0)))
 		case reflect.TypeFor[DataField[bool]]():
-			fieldVal.Set(reflect.ValueOf(Data(false)))
+			fieldVal.Set(reflect.ValueOf(newData(false)))
 		case reflect.TypeFor[DataField[[]string]]():
-			fieldVal.Set(reflect.ValueOf(Data([]string{})))
+			fieldVal.Set(reflect.ValueOf(newData([]string{})))
 		case reflect.TypeFor[DataField[map[string]string]]():
-			fieldVal.Set(reflect.ValueOf(Data(map[string]string{})))
+			fieldVal.Set(reflect.ValueOf(newData(map[string]string{})))
 		default:
 			initModel(model.FieldByIndex(field.Index))
 		}

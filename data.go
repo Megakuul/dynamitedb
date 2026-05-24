@@ -27,23 +27,22 @@ type DataField[T dataConstraint] interface {
 type dataFallback[T any] struct{}
 
 func (dataFallback[T]) Value() T {
-	var def T
-	return def
+	panic("incorrect DataField usage: cannot read value from filter or update operator")
 }
 
 func (dataFallback[T]) update(input T) T {
-	return input
+	panic("incorrect DataField usage: cannot use value or filter as update operator")
 }
 
 func (dataFallback[T]) filter(reflect.Value) bool {
-	return false
+	panic("incorrect DataField usage: cannot use value or update as filter operator")
 }
 
-// Data initializes a new data field.
-func Data[T dataConstraint](value T) *data[T] {
-	return &data[T]{data: value}
+func newData[T dataConstraint](v T) *data[T] {
+	return &data[T]{data: v}
 }
 
+// internal data interface used only for returned values.
 type data[T dataConstraint] struct {
 	dataFallback[T]
 	data T

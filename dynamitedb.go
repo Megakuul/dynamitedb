@@ -50,7 +50,6 @@ func NewFromClient(client *s3.Client, bucket string) *Bucket {
 	}
 }
 
-// TODO if this bottlenecks just write a small whitelist char checker
 var keySanitizer = regexp.MustCompile("^[A-Za-z0-9._-]{1,100}$")
 
 // constructBucketKey extracts, sanitizes and constructs an s3 bucket key string from the schema.
@@ -60,16 +59,16 @@ func constructBucketKey(filter reflect.Value) (string, bool, error) {
 	if err != nil {
 		return "", false, err
 	}
-	if !keySanitizer.MatchString(partKey) {
-		return "", false, fmt.Errorf("database partition key contains unsafe characters")
+	if !keySanitizer.MatchString(partVal) {
+		return "", false, fmt.Errorf("database partition key is malformed or contains unsafe characters")
 	}
 
 	sortKey, sortVal, sortExact, err := retrieveSortKey(filter)
 	if err != nil {
 		return "", false, err
 	}
-	if sortKey != "" && !keySanitizer.MatchString(sortKey) {
-		return "", false, fmt.Errorf("database sort key contains unsafe characters")
+	if sortKey != "" && !keySanitizer.MatchString(sortVal) {
+		return "", false, fmt.Errorf("database sort key is malformed or contains unsafe characters")
 	}
 
 	if sortKey == "" {
@@ -112,4 +111,47 @@ func retrieveSortKey(filter reflect.Value) (string, string, bool, error) {
 		}
 	}
 	return "", "", false, nil
+}
+
+// injectBucketKey takes the raw s3 key, parses it and inserts it into pk / sk fields of the target.
+func injectBucketKey(target reflect.Value, key string) error {
+	segments := strings.Split(key, "/")
+	if len(segments) < 2 {
+		return fmt.Errorf("invalid database key: expected '<part-type>/<part-id>/...' got '%s'", key)
+	}
+	partKey, partValue := segments[0], segments[1]
+	if err := writePartKey(target, partKey, partValue); err != nil {
+		return err
+	}
+
+	if len(segments) > 3 {
+		sortKey, sortValue := segments[2], segments[3]
+		if err := writeSortKey(target, sortKey, sortValue); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// writePartKey injects the provided value to the targets partition key with the matching key.
+func writePartKey(target reflect.Value, key, value string) error {
+	for field := range target.Fields() {
+		if field.Tag.Get("pk") != key {
+			continue
+		}
+		target.FieldByIndex(field.Index).Set(reflect.ValueOf(Key(value)))
+	}
+	return fmt.Errorf("partition key '%s' not found in schema", key)
+}
+
+// writeSortKey injects the provided value to the targets sort key with the matching key.
+func writeSortKey(target reflect.Value, key, value string) error {
+	for field := range target.Fields() {
+		if field.Tag.Get("sk") != key {
+			continue
+		}
+		target.FieldByIndex(field.Index).Set(reflect.ValueOf(Key(value)))
+	}
+	return fmt.Errorf("sort key '%s' not found in schema", key)
 }

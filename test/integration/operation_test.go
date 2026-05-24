@@ -1,4 +1,4 @@
-package e2e
+package integration
 
 import (
 	"context"
@@ -50,7 +50,7 @@ func TestOperations(t *testing.T) {
 
 	cfg, err := config.LoadDefaultConfig(
 		t.Context(),
-		config.WithRegion("eu-central-1"),
+		config.WithRegion("us-east-1"),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("ACCESS_KEY", "SECRET_KEY", "")),
 		config.WithHTTPClient(&http.Client{
 			Transport: &http.Transport{
@@ -73,18 +73,45 @@ func TestOperations(t *testing.T) {
 	}
 	bucket := dynamitedb.NewFromClient(client, "test")
 
+	cfg, err = config.LoadDefaultConfig(
+		t.Context(),
+		config.WithRegion("garage"),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("GK9ffdfe8ae1972bff91392d31", "04a28085a92760700f3e1ffb8f17258a0e2d4ed47c837a21025734c2a33b9223", "")),
+		config.WithHTTPClient(&http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
+		}),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	client = s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.BaseEndpoint = aws.String("http://127.0.0.1:3900")
+		o.UsePathStyle = true
+	})
+	bucket = dynamitedb.NewFromClient(client, "test")
+
 	err = dynamitedb.Create(t.Context(), bucket, &Test{
 		PartId:     dynamitedb.Key("1"),
 		SortId:     dynamitedb.Key("50"),
-		TestString: dynamitedb.Data("Bombaclad"),
+		TestString: dynamitedb.Set("Bombaclad"),
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	output, err := client.ListObjectsV2(t.Context(), &s3.ListObjectsV2Input{Bucket: aws.String("test")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, content := range output.Contents {
+		println(*content.Key)
+	}
+
 	res, err := dynamitedb.Get(t.Context(), bucket, &Test{
-		PartId: dynamitedb.KeyEq("1"),
-		SortId: dynamitedb.KeyEq("50"),
+		PartId: dynamitedb.Key("1"),
+		SortId: dynamitedb.Key("50"),
 	})
 	if err != nil {
 		t.Fatal(err)

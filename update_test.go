@@ -1,29 +1,32 @@
 package dynamitedb
 
 import (
+	"reflect"
 	"testing"
 )
 
 func TestModelUpdate(t *testing.T) {
 	// prepare
-	original := &Test{
+	original := reflect.New(reflect.TypeFor[Test]())
+	initModel(original)
+	applyUpdate(original, reflect.ValueOf(&Test{
 		PartId: Key("69"),
 		SortId: Key("187"),
 		Nested: &NestedTest{
-			TestString: Data("Nested Test"),
+			TestString: Set("Nested Test"),
 			Nested: NestedNestedTest{
-				TestString: Data("Nested Nested Test"),
+				TestString: Set("Nested Nested Test"),
 			},
 		},
-		TestString: Data("Test"),
-		TestInt:    Data(1337),
-		TestFloat:  Data(4.20),
-		TestBool:   Data(false),
-		TestSlice:  Data([]string{"bombaclad", "ananas", "banana"}),
-		TestMap:    Data(map[string]string{"bombaclad": "yes", "ananas": "absolutely", "banana": "yessir"}),
+		TestString: Set("Test"),
+		TestInt:    Set(1337),
+		TestFloat:  Set(4.20),
+		TestBool:   Set(false),
+		TestSlice:  Set([]string{"bombaclad", "ananas", "banana"}),
+		TestMap:    Set(map[string]string{"bombaclad": "yes", "ananas": "absolutely", "banana": "yessir"}),
 
-		TestUnmodified: Data("unmodified"),
-	}
+		TestUnmodified: Set("unmodified"),
+	}))
 
 	update := &Test{
 		PartId: Key("000"),
@@ -48,7 +51,7 @@ func TestModelUpdate(t *testing.T) {
 	}
 
 	// act
-	rawOriginal, err := serialize(original)
+	rawOriginal, err := serialize(original.Interface().(*Test))
 	if err != nil {
 		t.Fatalf("failed to serialize original structure: %v", err)
 	}
@@ -62,10 +65,6 @@ func TestModelUpdate(t *testing.T) {
 	}
 
 	// assert
-	if updated.PartId.Value() != "69" || updated.SortId.Value() != "187" {
-		t.Fatalf("updateModel modified keyFields this is not allowed!")
-	}
-
 	if updated.TestString.Value() != "Updated Test" {
 		t.Fatalf("string update does not work properly (got '%v' expected '%v')!",
 			updated.TestString.Value(),

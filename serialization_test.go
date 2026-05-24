@@ -7,27 +7,29 @@ import (
 
 func TestSerialization(t *testing.T) {
 	// prepare
-	original := &Test{
+	original := reflect.New(reflect.TypeFor[Test]())
+	initModel(original)
+	applyUpdate(original, reflect.ValueOf(&Test{
 		PartId: Key("69"),
 		SortId: Key("187"),
 		Nested: &NestedTest{
-			TestString: Data("Nested Test"),
+			TestString: Set("Nested Test"),
 			Nested: NestedNestedTest{
-				TestString: Data("Nested Nested Test"),
+				TestString: Set("Nested Nested Test"),
 			},
 		},
-		TestString: Data("Test"),
-		TestInt:    Data(1337),
-		TestFloat:  Data(4.20),
-		TestBool:   Data(false),
-		TestSlice:  Data([]string{"bombaclad", "ananas", "banana"}),
-		TestMap:    Data(map[string]string{"bombaclad": "yes", "ananas": "absolutely", "banana": "yessir"}),
+		TestString: Set("Test"),
+		TestInt:    Set(1337),
+		TestFloat:  Set(4.20),
+		TestBool:   Set(false),
+		TestSlice:  Set([]string{"bombaclad", "ananas", "banana"}),
+		TestMap:    Set(map[string]string{"bombaclad": "yes", "ananas": "absolutely", "banana": "yessir"}),
 
-		TestUnmodified: Data("unmodified"),
-	}
+		TestUnmodified: Set("unmodified"),
+	}))
 
 	// act
-	rawOriginal, err := serialize(original)
+	rawOriginal, err := serialize(original.Interface().(*Test))
 	if err != nil {
 		t.Fatalf("failed to serialize structure: %v", err)
 	}
@@ -45,6 +47,10 @@ func TestSerialization(t *testing.T) {
 	}
 
 	// assert
+	if secondUpdate.TestString.Value() != "Test" {
+		t.Fatalf("serialization disrupted data fields")
+	}
+
 	if !reflect.DeepEqual(firstUpdate, secondUpdate) {
 		t.Fatalf("serialization changed the structure")
 	}
