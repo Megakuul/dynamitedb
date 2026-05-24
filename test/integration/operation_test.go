@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/gofrs/uuid"
 	"github.com/johannesboyne/gofakes3"
 	"github.com/johannesboyne/gofakes3/backend/s3mem"
 	"github.com/megakuul/dynamitedb"
@@ -43,6 +44,7 @@ type NestedNestedTest struct {
 
 func TestOperations(t *testing.T) {
 	// prepare
+
 	backend := s3mem.New()
 	faker := gofakes3.New(backend)
 	server := httptest.NewServer(faker.Server())
@@ -99,5 +101,11 @@ func TestOperations(t *testing.T) {
 	}
 
 	println(res.TestString.Value())
+	type OrderItem struct {
+		OrderId  dynamitedb.KeyField `pk:"order" json:"-"`
+		ItemId   dynamitedb.KeyField `sk:"item" json:"-"`
+		StaticId uuid.UUID           `json:"static_id"` // <- this is allowed but immutable and non-filterable
+	}
+
 	// TODO
 }

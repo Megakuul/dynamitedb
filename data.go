@@ -2,11 +2,12 @@ package dynamitedb
 
 import (
 	"reflect"
+	"time"
 )
 
 // dataConstraint simply wraps all supported dynamite types to avoid boilerplate.
 type dataConstraint interface {
-	string | int | float64 | bool | []string | map[string]string
+	string | int | float64 | bool | time.Time | time.Duration | []string | map[string]string
 }
 
 // DataField defines a dynamite data field (initialize with dynamitedb.Data("blub")).

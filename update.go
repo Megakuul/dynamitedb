@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -98,6 +99,10 @@ func applyUpdate(original, update reflect.Value) {
 			applyFieldUpdate[float64](original, update, field.Index)
 		case reflect.TypeFor[DataField[bool]]():
 			applyFieldUpdate[bool](original, update, field.Index)
+		case reflect.TypeFor[DataField[time.Time]]():
+			applyFieldUpdate[time.Time](original, update, field.Index)
+		case reflect.TypeFor[DataField[time.Duration]]():
+			applyFieldUpdate[time.Duration](original, update, field.Index)
 		case reflect.TypeFor[DataField[[]string]]():
 			applyFieldUpdate[[]string](original, update, field.Index)
 		case reflect.TypeFor[DataField[map[string]string]]():

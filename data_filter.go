@@ -4,22 +4,32 @@ import (
 	"reflect"
 	"slices"
 	"strings"
+	"time"
 )
+
+// CustomFilter allows you to perform a custom filter check on the field.
+// This is a filter operator.
+func CustomFilter[T dataConstraint](check func(databaseValue T) bool) *customFilter[T] {
+	return &customFilter[T]{check: check}
+}
 
 // Eq checks for an exact match with the operand.
 // For slices and map this enforces a deep equal state.
-func Eq[T any](operand T) *eqFilter[T] {
+// This is a filter operator.
+func Eq[T dataConstraint](operand T) *eqFilter[T] {
 	return &eqFilter[T]{rhs: reflect.ValueOf(operand)}
 }
 
 // NotEq is just !Eq.
-func NotEq[T any](operand T) *notEqFilter[T] {
+// This is a filter operator.
+func NotEq[T dataConstraint](operand T) *notEqFilter[T] {
 	return &notEqFilter[T]{rhs: reflect.ValueOf(operand)}
 }
 
 // In checks if the database value is inside the provided list.
 // Functionally equivalent to Eq but just with an operand for loop.
-func In[T any](operands ...T) inFilter[T] {
+// This is a filter operator.
+func In[T dataConstraint](operands ...T) inFilter[T] {
 	rhsSlice := make([]reflect.Value, len(operands))
 	for i, operand := range operands {
 		rhsSlice[i] = reflect.ValueOf(operand)
@@ -28,7 +38,8 @@ func In[T any](operands ...T) inFilter[T] {
 }
 
 // NotIn is just !In.
-func NotIn[T any](operands ...T) notInFilter[T] {
+// This is a filter operator.
+func NotIn[T dataConstraint](operands ...T) notInFilter[T] {
 	rhsSlice := make([]reflect.Value, len(operands))
 	for i, operand := range operands {
 		rhsSlice[i] = reflect.ValueOf(operand)
@@ -37,38 +48,69 @@ func NotIn[T any](operands ...T) notInFilter[T] {
 }
 
 // Includes checks if the string contains the operand.
+// This is a filter operator.
 func Includes[T string](operand string) *includesFilter[T] {
 	return &includesFilter[T]{search: operand}
 }
 
 // Contains checks if the slice contains all of the operands.
+// This is a filter operator.
 func Contains[T []string](operands ...string) *containsFilter[T] {
 	return &containsFilter[T]{searches: operands}
 }
 
 // Has checks if the map contains the specified key value pair.
+// This is a filter operator.
 func Has[T map[string]string](key, value string) *hasFilter[T] {
 	return &hasFilter[T]{key: key, value: value}
 }
 
+// Before checks if the database value is before the specified time.
+// This is a filter operator.
+func Before[T time.Time](operand T) *beforeFilter[T] {
+	return &beforeFilter[T]{operand: operand}
+}
+
+// After checks if the database value is after the specified time.
+// This is a filter operator.
+func After[T time.Time](operand T) *afterFilter[T] {
+	return &afterFilter[T]{operand: operand}
+}
+
 // GreaterThan compares exactly what it says.
-func GreaterThan[T int | float64](operand T) *greaterThanFilter[T] {
+// This is a filter operator.
+func GreaterThan[T int | float64 | time.Duration](operand T) *greaterThanFilter[T] {
 	return &greaterThanFilter[T]{operand: operand}
 }
 
 // GreaterOrEqThan compares exactly what it says.
-func GreaterOrEqThan[T int | float64](operand T) *greaterOrEqThanFilter[T] {
+// This is a filter operator.
+func GreaterOrEqThan[T int | float64 | time.Duration](operand T) *greaterOrEqThanFilter[T] {
 	return &greaterOrEqThanFilter[T]{operand: operand}
 }
 
 // LessThan compares exactly what it says.
-func LessThan[T int | float64](operand T) *lessThanFilter[T] {
+// This is a filter operator.
+func LessThan[T int | float64 | time.Duration](operand T) *lessThanFilter[T] {
 	return &lessThanFilter[T]{operand: operand}
 }
 
 // LessThanOrEq compares exactly what it says.
-func LessOrEqThan[T int | float64](operand T) *lessOrEqThanFilter[T] {
+// This is a filter operator.
+func LessOrEqThan[T int | float64 | time.Duration](operand T) *lessOrEqThanFilter[T] {
 	return &lessOrEqThanFilter[T]{operand: operand}
+}
+
+type customFilter[T any] struct {
+	dataFallback[T]
+	check func(T) bool
+}
+
+func (q customFilter[T]) filter(lhs reflect.Value) bool {
+	if lhsValue, ok := lhs.Interface().(T); ok {
+		return q.check(lhsValue)
+	}
+	return false
 }
 
 type eqFilter[T any] struct {
@@ -162,7 +204,31 @@ func (q hasFilter[T]) filter(lhs reflect.Value) bool {
 	return hashmap != nil && hashmap[q.key] == q.value
 }
 
-type greaterThanFilter[T float64 | int] struct {
+type afterFilter[T time.Time] struct {
+	dataFallback[T]
+	operand T
+}
+
+func (q afterFilter[T]) filter(lhs reflect.Value) bool {
+	if lhsValue, ok := lhs.Interface().(time.Time); ok {
+		return lhsValue.After(any(q.operand).(time.Time))
+	}
+	return false
+}
+
+type beforeFilter[T time.Time] struct {
+	dataFallback[T]
+	operand T
+}
+
+func (q beforeFilter[T]) filter(lhs reflect.Value) bool {
+	if lhsValue, ok := lhs.Interface().(time.Time); ok {
+		return lhsValue.Before(any(q.operand).(time.Time))
+	}
+	return false
+}
+
+type greaterThanFilter[T float64 | int | time.Duration] struct {
 	dataFallback[T]
 	operand T
 }
@@ -178,7 +244,7 @@ func (q greaterThanFilter[T]) filter(lhs reflect.Value) bool {
 	}
 }
 
-type greaterOrEqThanFilter[T float64 | int] struct {
+type greaterOrEqThanFilter[T float64 | int | time.Duration] struct {
 	dataFallback[T]
 	operand T
 }
@@ -194,7 +260,7 @@ func (q greaterOrEqThanFilter[T]) filter(lhs reflect.Value) bool {
 	}
 }
 
-type lessThanFilter[T float64 | int] struct {
+type lessThanFilter[T float64 | int | time.Duration] struct {
 	dataFallback[T]
 	operand T
 }
@@ -210,7 +276,7 @@ func (q lessThanFilter[T]) filter(lhs reflect.Value) bool {
 	}
 }
 
-type lessOrEqThanFilter[T float64 | int] struct {
+type lessOrEqThanFilter[T float64 | int | time.Duration] struct {
 	dataFallback[T]
 	operand T
 }

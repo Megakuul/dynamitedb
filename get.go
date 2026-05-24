@@ -7,6 +7,7 @@ import (
 	"io"
 	"math"
 	"reflect"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -177,6 +178,14 @@ func checkFilter(original, filter reflect.Value) bool {
 			}
 		case reflect.TypeFor[DataField[bool]]():
 			if !checkFieldFilter[bool](original, filter, field.Index) {
+				return false
+			}
+		case reflect.TypeFor[DataField[time.Time]]():
+			if !checkFieldFilter[time.Time](original, filter, field.Index) {
+				return false
+			}
+		case reflect.TypeFor[DataField[time.Duration]]():
+			if !checkFieldFilter[time.Duration](original, filter, field.Index) {
 				return false
 			}
 		case reflect.TypeFor[DataField[[]string]]():

@@ -3,6 +3,7 @@ package dynamitedb
 import (
 	"encoding/json"
 	"reflect"
+	"time"
 )
 
 // serializes the structure into raw database representation.
@@ -53,6 +54,10 @@ func initModel(model reflect.Value) {
 			fieldVal.Set(reflect.ValueOf(newData(0.0)))
 		case reflect.TypeFor[DataField[bool]]():
 			fieldVal.Set(reflect.ValueOf(newData(false)))
+		case reflect.TypeFor[DataField[time.Time]]():
+			fieldVal.Set(reflect.ValueOf(newData(time.Time{})))
+		case reflect.TypeFor[DataField[time.Duration]]():
+			fieldVal.Set(reflect.ValueOf(newData(time.Duration{})))
 		case reflect.TypeFor[DataField[[]string]]():
 			fieldVal.Set(reflect.ValueOf(newData([]string{})))
 		case reflect.TypeFor[DataField[map[string]string]]():
