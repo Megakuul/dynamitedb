@@ -1,16 +1,74 @@
-# DynamiteDB 🧨
+![banner](/banner.svg)
 ---
 
 Simple ST database engine running entirely on S3.
 
 ```go
-
-client, err := dynamitedb.New(context.TODO(), "https://mys3endpoint.com", "mys3bucket")
-if err!=nil {
-    return err
+// define schemas via KeyField and DataField (see supported types below).
+type OrderItem struct {
+	OrderId     dynamitedb.KeyField          `pk:"order" json:"-"`
+	ItemId      dynamitedb.KeyField          `sk:"item" json:"-"`
+	Hidden      dynamitedb.DataField[bool]   `json:"hidden"`
+	Name        dynamitedb.DataField[string] `json:"name"`
+	Description dynamitedb.DataField[string] `json:"description"`
+	Count       dynamitedb.DataField[int]    `json:"count"`
+	Price       dynamitedb.DataField[int]    `json:"price"`
 }
 
-// TODO
+func example() error {
+    // create a bucket client
+	bucket, err := dynamitedb.New(context.TODO(), "http://127.0.0.1:3900", "test",
+		dynamitedb.WithCredentials("access_key", "secret_key"),
+		dynamitedb.WithRegion("garage"),
+	)
+	if err != nil {
+		return err
+	}
+
+	err = dynamitedb.Create(context.TODO(), bucket, &OrderItem{
+		OrderId:     dynamitedb.Key("1"), // order 1
+		ItemId:      dynamitedb.Key("3"), // item 3 on order 1
+		Name:        dynamitedb.Set("CNC Machine"),
+		Description: dynamitedb.Set("The flagship of our store"),
+		Count:       dynamitedb.Set(1),
+		Price:       dynamitedb.Set(1_000_000),
+		Hidden:      dynamitedb.Set(true),
+	})
+	if err != nil {
+		if errors.Is(err, dynamitedb.ErrAlreadyExists) {
+			// do something special
+		}
+		return err
+	}
+
+	err = dynamitedb.Update(context.TODO(), bucket, &OrderItem{
+		OrderId: dynamitedb.Key("1"),
+		ItemId:  dynamitedb.Key("3"),
+		Count:   dynamitedb.Mul(2),
+		Price:   dynamitedb.Inc(1_000),
+		Hidden:  dynamitedb.Toggle(),
+	})
+	if err != nil {
+		return err
+	}
+
+	item, err := dynamitedb.Get(context.TODO(), bucket, &OrderItem{
+		OrderId: dynamitedb.Key("1"),  // order 1
+		ItemId:  dynamitedb.Key("3"),  // item 3 on order 1
+		Hidden:  dynamitedb.Eq(false), // must be active
+	})
+	if err != nil {
+		if errors.Is(err, dynamitedb.ErrNotFound) {
+			// do something special
+		}
+		return err
+	}
+
+	fmt.Println(item.Name.Value())
+	fmt.Println(item.Count.Value())
+	fmt.Println(item.Price.Value())
+	return nil
+}
 ```
 
 

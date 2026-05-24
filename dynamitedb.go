@@ -11,6 +11,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
@@ -19,9 +20,11 @@ type Bucket struct {
 	client *s3.Client
 }
 
+type BucketOption func(*s3.Options)
+
 // New constructs a dynamitedb bucket pointing to the provided s3 url / bucket.
 // Credentials are loaded with aws sdk (e.g. from env AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY).
-func New(ctx context.Context, url, bucket string) (*Bucket, error) {
+func New(ctx context.Context, url, bucket string, opts ...BucketOption) (*Bucket, error) {
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithHTTPClient(&http.Client{
 		Transport: &http.Transport{
 			MaxIdleConns:        100,
@@ -38,8 +41,27 @@ func New(ctx context.Context, url, bucket string) (*Bucket, error) {
 		client: s3.NewFromConfig(cfg, func(o *s3.Options) {
 			o.BaseEndpoint = aws.String(url)
 			o.UsePathStyle = true
+			for _, opt := range opts {
+				opt(o)
+			}
 		}),
 	}, nil
+}
+
+// WithCredentials specifies a static access and secret key.
+// This disables the default AWS SDK credential process.
+func WithCredentials(accessKey, secretKey string) BucketOption {
+	return func(o *s3.Options) {
+		o.Credentials = credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")
+	}
+}
+
+// WithRegion specifies a static bucket region.
+// This disables the default AWS SDK region process.
+func WithRegion(region string) BucketOption {
+	return func(o *s3.Options) {
+		o.Region = region
+	}
 }
 
 // NewFromClient initializes a dynamitedb bucket from an existing aws s3 sdk client.
@@ -141,6 +163,7 @@ func writePartKey(target reflect.Value, key, value string) error {
 			continue
 		}
 		target.FieldByIndex(field.Index).Set(reflect.ValueOf(Key(value)))
+		return nil
 	}
 	return fmt.Errorf("partition key '%s' not found in schema", key)
 }
@@ -152,6 +175,7 @@ func writeSortKey(target reflect.Value, key, value string) error {
 			continue
 		}
 		target.FieldByIndex(field.Index).Set(reflect.ValueOf(Key(value)))
+		return nil
 	}
 	return fmt.Errorf("sort key '%s' not found in schema", key)
 }

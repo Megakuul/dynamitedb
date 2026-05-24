@@ -17,8 +17,8 @@ import (
 )
 
 type Test struct {
-	PartId     dynamitedb.KeyField                     `pk:"part" json:"part_id"`
-	SortId     dynamitedb.KeyField                     `sk:"sort" json:"sort_id"`
+	PartId     dynamitedb.KeyField                     `pk:"part" json:"-"`
+	SortId     dynamitedb.KeyField                     `sk:"sort" json:"-"`
 	Nested     *NestedTest                             `json:"nested"`
 	TestString dynamitedb.DataField[string]            `json:"test_string"`
 	TestInt    dynamitedb.DataField[int]               `json:"test_int"`
@@ -72,25 +72,6 @@ func TestOperations(t *testing.T) {
 		t.Fatal(err)
 	}
 	bucket := dynamitedb.NewFromClient(client, "test")
-
-	cfg, err = config.LoadDefaultConfig(
-		t.Context(),
-		config.WithRegion("garage"),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("GK9ffdfe8ae1972bff91392d31", "04a28085a92760700f3e1ffb8f17258a0e2d4ed47c837a21025734c2a33b9223", "")),
-		config.WithHTTPClient(&http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			},
-		}),
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	client = s3.NewFromConfig(cfg, func(o *s3.Options) {
-		o.BaseEndpoint = aws.String("http://127.0.0.1:3900")
-		o.UsePathStyle = true
-	})
-	bucket = dynamitedb.NewFromClient(client, "test")
 
 	err = dynamitedb.Create(t.Context(), bucket, &Test{
 		PartId:     dynamitedb.Key("1"),

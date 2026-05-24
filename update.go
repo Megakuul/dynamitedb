@@ -76,8 +76,11 @@ func updateObject[T any](originalBody []byte, update *T) ([]byte, error) {
 // applyUpdate traverses the update structure and applies supported non-nil
 // Field types to the original object. Expects abi compatible objects.
 func applyUpdate(original, update reflect.Value) {
-	if original.Kind() == reflect.Pointer {
+	if update.Kind() == reflect.Pointer {
 		applyUpdate(original.Elem(), update.Elem())
+		return
+	}
+	if update.Kind() != reflect.Struct {
 		return
 	}
 	for field := range update.Fields() {
