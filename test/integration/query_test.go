@@ -15,8 +15,8 @@ func checkQueries(t *testing.T, bucket *dynamitedb.Bucket) {
 		}
 
 		err := dynamitedb.Create(t.Context(), bucket, &Test{
-			PartId:     dynamitedb.Key("workflow"),
-			SortId:     dynamitedb.Key(fmt.Sprintf("%s-%d", prefix, i)),
+			PartID:     dynamitedb.Key("workflow"),
+			SortID:     dynamitedb.Key(fmt.Sprintf("%s-%d", prefix, i)),
 			TestString: dynamitedb.Set(fmt.Sprintf("Bombaclad %d", i)),
 			Nested: &NestedTest{
 				TestString: dynamitedb.Set("Nested Test"),
@@ -30,8 +30,8 @@ func checkQueries(t *testing.T, bucket *dynamitedb.Bucket) {
 	}
 
 	results, err := dynamitedb.Query(t.Context(), bucket, &Test{
-		PartId: dynamitedb.Key("workflow"),
-		SortId: dynamitedb.KeyPrefix("even-"),
+		PartID: dynamitedb.Key("workflow"),
+		SortID: dynamitedb.KeyPrefix("even-"),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -44,8 +44,8 @@ func checkQueries(t *testing.T, bucket *dynamitedb.Bucket) {
 	}
 
 	results, err = dynamitedb.Query(t.Context(), bucket, &Test{
-		PartId: dynamitedb.Key("workflow"),
-		SortId: dynamitedb.KeyPrefix("even-"),
+		PartID: dynamitedb.Key("workflow"),
+		SortID: dynamitedb.KeyPrefix("even-"),
 	}, dynamitedb.WithStartAfter(results[49])) // starting after even-49 should yield nothing (because its lexically sorted)
 	if err != nil {
 		t.Fatal(err)
@@ -55,8 +55,8 @@ func checkQueries(t *testing.T, bucket *dynamitedb.Bucket) {
 	}
 
 	results, err = dynamitedb.Query(t.Context(), bucket, &Test{
-		PartId: dynamitedb.Key("workflow"),
-		SortId: dynamitedb.KeyPrefix("odd-"),
+		PartID: dynamitedb.Key("workflow"),
+		SortID: dynamitedb.KeyPrefix("odd-"),
 	}, dynamitedb.WithLimit(20))
 	if err != nil {
 		t.Fatal(err)
@@ -66,8 +66,8 @@ func checkQueries(t *testing.T, bucket *dynamitedb.Bucket) {
 	}
 
 	results, err = dynamitedb.Query(t.Context(), bucket, &Test{
-		PartId:     dynamitedb.Key("workflow"),
-		SortId:     dynamitedb.KeyPrefix("even-"),
+		PartID:     dynamitedb.Key("workflow"),
+		SortID:     dynamitedb.KeyPrefix("even-"),
 		TestString: dynamitedb.Includes("Bombaclad"),
 		TestInt: dynamitedb.CustomFilter(func(test int) bool {
 			return test%2 == 0 // ensure they are even

@@ -95,7 +95,7 @@ func LessThan[T int | float64 | time.Duration](operand T) *lessThanFilter[T] {
 	return &lessThanFilter[T]{operand: operand}
 }
 
-// LessThanOrEq compares exactly what it says.
+// LessOrEqThan compares exactly what it says.
 // This is a filter operator.
 func LessOrEqThan[T int | float64 | time.Duration](operand T) *lessOrEqThanFilter[T] {
 	return &lessOrEqThanFilter[T]{operand: operand}

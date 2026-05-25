@@ -10,8 +10,8 @@ import (
 func checkWorkflow(t *testing.T, bucket *dynamitedb.Bucket) {
 	now := time.Now()
 	err := dynamitedb.Create(t.Context(), bucket, &Test{
-		PartId:     dynamitedb.Key("workflow"),
-		SortId:     dynamitedb.Key("69"),
+		PartID:     dynamitedb.Key("workflow"),
+		SortID:     dynamitedb.Key("69"),
 		TestString: dynamitedb.Set("Bombaclad"),
 		Nested: &NestedTest{
 			TestString: dynamitedb.Set("Nested Test"),
@@ -29,8 +29,8 @@ func checkWorkflow(t *testing.T, bucket *dynamitedb.Bucket) {
 	}
 
 	err = dynamitedb.Update(t.Context(), bucket, &Test{
-		PartId:     dynamitedb.Key("workflow"),
-		SortId:     dynamitedb.Key("69"),
+		PartID:     dynamitedb.Key("workflow"),
+		SortID:     dynamitedb.Key("69"),
 		TestString: dynamitedb.Set("Updated Bombaclad"),
 		Nested: &NestedTest{
 			TestString: dynamitedb.Set("Updated Nested Test"),
@@ -49,8 +49,8 @@ func checkWorkflow(t *testing.T, bucket *dynamitedb.Bucket) {
 	}
 
 	_, err = dynamitedb.Get(t.Context(), bucket, &Test{
-		PartId:     dynamitedb.Key("workflow"),
-		SortId:     dynamitedb.Key("69"),
+		PartID:     dynamitedb.Key("workflow"),
+		SortID:     dynamitedb.Key("69"),
 		TestString: dynamitedb.Includes("pdated Bombacla"),
 		Nested: &NestedTest{
 			TestString: dynamitedb.Eq("Updated Nested Test"),

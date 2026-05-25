@@ -18,8 +18,8 @@ import (
 )
 
 type Test struct {
-	PartId       dynamitedb.KeyField                     `pk:"part" json:"-"`
-	SortId       dynamitedb.KeyField                     `sk:"sort" json:"-"`
+	PartID       dynamitedb.KeyField                     `pk:"part" json:"-"`
+	SortID       dynamitedb.KeyField                     `sk:"sort" json:"-"`
 	Nested       *NestedTest                             `json:"nested,omitempty"`
 	TestString   dynamitedb.DataField[string]            `json:"test_string,omitempty"`
 	TestInt      dynamitedb.DataField[int]               `json:"test_int,omitempty"`

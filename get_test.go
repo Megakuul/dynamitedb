@@ -10,8 +10,8 @@ func TestModelFilter(t *testing.T) {
 	original := reflect.New(reflect.TypeFor[Test]())
 	initModel(original)
 	applyUpdate(original, reflect.ValueOf(&Test{
-		PartId: Key("69"),
-		SortId: Key("187"),
+		PartID: Key("69"),
+		SortID: Key("187"),
 		Nested: &NestedTest{
 			TestString: Set("Nested Test"),
 			Nested: NestedNestedTest{
@@ -29,13 +29,13 @@ func TestModelFilter(t *testing.T) {
 	}))
 
 	passEmptyFilter := &Test{
-		PartId: Key("69"),
-		SortId: Key("187"),
+		PartID: Key("69"),
+		SortID: Key("187"),
 	}
 
 	passEqFilter := &Test{
-		PartId: Key("69"),
-		SortId: Key("187"),
+		PartID: Key("69"),
+		SortID: Key("187"),
 		Nested: &NestedTest{
 			TestString: Eq("Nested Test"),
 			Nested: NestedNestedTest{
@@ -53,8 +53,8 @@ func TestModelFilter(t *testing.T) {
 	}
 
 	passOpFilter := &Test{
-		PartId:         Key("69"),
-		SortId:         Key("187"),
+		PartID:         Key("69"),
+		SortID:         Key("187"),
 		TestString:     Includes("es"),
 		TestInt:        GreaterThan(1336),
 		TestFloat:      LessOrEqThan(4.20),
@@ -64,8 +64,8 @@ func TestModelFilter(t *testing.T) {
 	}
 
 	failNestedFilter := &Test{
-		PartId: Key("69"),
-		SortId: Key("187"),
+		PartID: Key("69"),
+		SortID: Key("187"),
 		Nested: &NestedTest{
 			TestString: Eq("Nested Test"),
 			Nested: NestedNestedTest{
@@ -74,31 +74,31 @@ func TestModelFilter(t *testing.T) {
 		},
 	}
 	failInFilter := &Test{
-		PartId:    Key("69"),
-		SortId:    Key("187"),
+		PartID:    Key("69"),
+		SortID:    Key("187"),
 		TestSlice: In([]string{"test1"}, []string{"bombacladdd", "ananas", "banana"}, []string{"test2"}),
 	}
 	failSliceFilter := &Test{
-		PartId:     Key("69"),
-		SortId:     Key("187"),
+		PartID:     Key("69"),
+		SortID:     Key("187"),
 		TestString: Eq("Test"),
 		TestSlice:  Eq([]string{"bombacladdd", "ananas", "banana"}),
 	}
 	failContainsFilter := &Test{
-		PartId:     Key("69"),
-		SortId:     Key("187"),
+		PartID:     Key("69"),
+		SortID:     Key("187"),
 		TestString: Eq("Test"),
 		TestSlice:  Contains("bombacladdd"),
 	}
 	failMapFilter := &Test{
-		PartId:     Key("69"),
-		SortId:     Key("187"),
+		PartID:     Key("69"),
+		SortID:     Key("187"),
 		TestString: Eq("Test"),
 		TestMap:    Eq(map[string]string{"bombaclad": "no", "ananas": "absolutely", "banana": "yessir"}),
 	}
 	failHasFilter := &Test{
-		PartId:     Key("69"),
-		SortId:     Key("187"),
+		PartID:     Key("69"),
+		SortID:     Key("187"),
 		TestString: Eq("Test"),
 		TestMap:    Has("bombaclad", "no"),
 	}

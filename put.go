@@ -3,6 +3,7 @@ package dynamitedb
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -38,7 +39,7 @@ func Put[T any](ctx context.Context, bucket *Bucket, model *T, opts ...Option) e
 		Expires: options.expires,
 	})
 	if err != nil {
-		return err
+		return errors.New(err.Error())
 	}
 	return nil
 }

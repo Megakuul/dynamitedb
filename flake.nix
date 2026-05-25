@@ -17,6 +17,7 @@
           packages = with pkgs; [
             go
             gotools
+            go-tools
             gofumpt
           ];
         };

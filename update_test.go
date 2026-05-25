@@ -14,8 +14,8 @@ func TestModelUpdate(t *testing.T) {
 	original := reflect.New(reflect.TypeFor[Test]())
 	initModel(original)
 	applyUpdate(original, reflect.ValueOf(&Test{
-		PartId: Key("69"),
-		SortId: Key("187"),
+		PartID: Key("69"),
+		SortID: Key("187"),
 		Nested: &NestedTest{
 			TestString: Set("Nested Test"),
 			Nested: NestedNestedTest{
@@ -35,8 +35,8 @@ func TestModelUpdate(t *testing.T) {
 	}))
 
 	update := &Test{
-		PartId: Key("000"),
-		SortId: Key("000"),
+		PartID: Key("000"),
+		SortID: Key("000"),
 		Nested: &NestedTest{
 			TestString: Set("Updated Nested Test"),
 			Nested: NestedNestedTest{

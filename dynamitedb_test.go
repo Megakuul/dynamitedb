@@ -3,8 +3,8 @@ package dynamitedb
 import "time"
 
 type Test struct {
-	PartId       KeyField                     `pk:"part" json:"-"`
-	SortId       KeyField                     `sk:"sort" json:"-"`
+	PartID       KeyField                     `pk:"part" json:"-"`
+	SortID       KeyField                     `sk:"sort" json:"-"`
 	Nested       *NestedTest                  `json:"nested,omitempty"`
 	TestString   DataField[string]            `json:"test_string,omitempty"`
 	TestInt      DataField[int]               `json:"test_int,omitempty"`

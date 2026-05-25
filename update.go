@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/smithy-go"
 )
 
 // Update changes the entry on the database (identified by PK / SK).
@@ -38,7 +39,7 @@ func Update[T any](ctx context.Context, bucket *Bucket, update *T, opts ...Optio
 		if _, ok := errors.AsType[*types.NoSuchKey](err); ok {
 			return ErrNotFound
 		}
-		return err
+		return errors.New(err.Error())
 	}
 	originalBody, err := io.ReadAll(originalResp.Body)
 	if err != nil {
@@ -58,7 +59,11 @@ func Update[T any](ctx context.Context, bucket *Bucket, update *T, opts ...Optio
 		Expires: options.expires,
 	})
 	if err != nil {
-		return err
+		var sErr smithy.APIError
+		if errors.As(err, &sErr) && sErr.ErrorCode() == "PreconditionFailed" {
+			return ErrConcurrencyConflict
+		}
+		return errors.New(err.Error())
 	}
 	return nil
 }

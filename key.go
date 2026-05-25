@@ -32,7 +32,6 @@ func Key(id string) *key {
 // internal key interface (defines layout on database).
 // Unlike the data interface it is used for returned and query values since keys are immutable.
 type key struct {
-	keyFallback
 	key string
 }
 

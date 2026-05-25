@@ -191,6 +191,13 @@ dynamitedb.Get(context.TODO(), bucket, &OrderItem{
 > All operators contain comments describing whether they are for filtering or updating. 
 
 
+## Errors
+
+DynamiteDB intentionally hides the underlying S3 errors so they are not relied upon and not part of the public API.
+
+
+Instead, it provides its own set of sentinel errors in [errors](/errors.go) which can be used to check for certain conditions of the request.
+
 ## Concept
 
 DynamiteDB is based on a simplified version of the SingleTable data schema often used in DynamoDB.

@@ -34,7 +34,7 @@ func Get[T any](ctx context.Context, bucket *Bucket, filter *T) (*T, error) {
 		if _, ok := errors.AsType[*types.NoSuchKey](err); ok {
 			return nil, ErrNotFound
 		}
-		return nil, err
+		return nil, errors.New(err.Error())
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -90,7 +90,7 @@ func Query[T any](ctx context.Context, bucket *Bucket, filter *T, opts ...Option
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
-			return nil, err
+			return nil, errors.New(err.Error())
 		}
 		for {
 			if len(page.Contents) < 1 || len(outputModels) >= options.limit {
@@ -109,7 +109,7 @@ func Query[T any](ctx context.Context, bucket *Bucket, filter *T, opts ...Option
 						Key:    object.Key,
 					})
 					if err != nil {
-						return err
+						return errors.New(err.Error())
 					}
 					body, err := io.ReadAll(resp.Body)
 					if err != nil {

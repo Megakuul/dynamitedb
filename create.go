@@ -3,11 +3,13 @@ package dynamitedb
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/smithy-go"
 )
 
 // Create inserts the provided structure to the database if not exists.
@@ -40,7 +42,11 @@ func Create[T any](ctx context.Context, bucket *Bucket, model *T, opts ...Option
 		Expires:     options.expires,
 	})
 	if err != nil {
-		return err
+		var sErr smithy.APIError
+		if errors.As(err, &sErr) && sErr.ErrorCode() == "PreconditionFailed" {
+			return ErrAlreadyExists
+		}
+		return errors.New(err.Error())
 	}
 	return nil
 }

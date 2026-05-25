@@ -8,8 +8,8 @@ import (
 
 func checkInserts(t *testing.T, bucket *dynamitedb.Bucket) {
 	err := dynamitedb.Create(t.Context(), bucket, &Test{
-		PartId:     dynamitedb.Key("insert"),
-		SortId:     dynamitedb.Key("1337"),
+		PartID:     dynamitedb.Key("insert"),
+		SortID:     dynamitedb.Key("1337"),
 		TestString: dynamitedb.Set("Santa Clause"),
 	})
 	if err != nil {
@@ -17,17 +17,19 @@ func checkInserts(t *testing.T, bucket *dynamitedb.Bucket) {
 	}
 
 	err = dynamitedb.Create(t.Context(), bucket, &Test{
-		PartId:     dynamitedb.Key("insert"),
-		SortId:     dynamitedb.Key("1337"),
+		PartID:     dynamitedb.Key("insert"),
+		SortID:     dynamitedb.Key("1337"),
 		TestString: dynamitedb.Set("The Oompa-Loompas"),
 	})
 	if err == nil {
 		t.Fatalf("double create insert should fail but it didn't fail...")
 	}
+	println(err.Error())
+	t.Fail()
 
 	err = dynamitedb.Put(t.Context(), bucket, &Test{
-		PartId:     dynamitedb.Key("insert"),
-		SortId:     dynamitedb.Key("1337"),
+		PartID:     dynamitedb.Key("insert"),
+		SortID:     dynamitedb.Key("1337"),
 		TestString: dynamitedb.Set("Willy Wonka"),
 	})
 	if err != nil {
@@ -35,8 +37,8 @@ func checkInserts(t *testing.T, bucket *dynamitedb.Bucket) {
 	}
 
 	_, err = dynamitedb.Get(t.Context(), bucket, &Test{
-		PartId:     dynamitedb.Key("insert"),
-		SortId:     dynamitedb.Key("1337"),
+		PartID:     dynamitedb.Key("insert"),
+		SortID:     dynamitedb.Key("1337"),
 		TestString: dynamitedb.Eq("Willy Wonka"),
 	})
 	if err != nil {

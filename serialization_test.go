@@ -11,8 +11,8 @@ func TestSerialization(t *testing.T) {
 	original := reflect.New(reflect.TypeFor[Test]())
 	initModel(original)
 	applyUpdate(original, reflect.ValueOf(&Test{
-		PartId: Key("69"),
-		SortId: Key("187"),
+		PartID: Key("69"),
+		SortID: Key("187"),
 		Nested: &NestedTest{
 			TestString: Set("Nested Test"),
 			Nested: NestedNestedTest{

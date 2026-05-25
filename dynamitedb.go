@@ -1,3 +1,4 @@
+// Package dynamitedb provides an embedded singletable database engine running on s3.
 package dynamitedb
 
 import (
