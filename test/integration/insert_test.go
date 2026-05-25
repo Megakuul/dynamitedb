@@ -24,8 +24,6 @@ func checkInserts(t *testing.T, bucket *dynamitedb.Bucket) {
 	if err == nil {
 		t.Fatalf("double create insert should fail but it didn't fail...")
 	}
-	println(err.Error())
-	t.Fail()
 
 	err = dynamitedb.Put(t.Context(), bucket, &Test{
 		PartID:     dynamitedb.Key("insert"),
