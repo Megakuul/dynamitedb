@@ -78,6 +78,9 @@ func updateObject[T any](originalBody []byte, update *T) ([]byte, error) {
 // Field types to the original object. Expects abi compatible objects.
 func applyUpdate(original, update reflect.Value) {
 	if update.Kind() == reflect.Pointer {
+		if !original.Elem().IsValid() {
+			original.Set(reflect.New(original.Type().Elem()))
+		}
 		applyUpdate(original.Elem(), update.Elem())
 		return
 	}

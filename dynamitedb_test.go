@@ -3,28 +3,28 @@ package dynamitedb
 import "time"
 
 type Test struct {
-	PartId       KeyField                     `pk:"part" json:"part_id"`
-	SortId       KeyField                     `sk:"sort" json:"sort_id"`
-	Nested       *NestedTest                  `json:"nested"`
-	TestString   DataField[string]            `json:"test_string"`
-	TestInt      DataField[int]               `json:"test_int"`
-	TestFloat    DataField[float64]           `json:"test_float"`
-	TestSlice    DataField[[]string]          `json:"test_slice"`
-	TestMap      DataField[map[string]string] `json:"test_map"`
-	TestBool     DataField[bool]              `json:"test_bool"`
-	TestTime     DataField[time.Time]         `json:"test_time"`
-	TestDuration DataField[time.Duration]     `json:"test_duration"`
+	PartId       KeyField                     `pk:"part" json:"-"`
+	SortId       KeyField                     `sk:"sort" json:"-"`
+	Nested       *NestedTest                  `json:"nested,omitempty"`
+	TestString   DataField[string]            `json:"test_string,omitempty"`
+	TestInt      DataField[int]               `json:"test_int,omitempty"`
+	TestFloat    DataField[float64]           `json:"test_float,omitempty"`
+	TestSlice    DataField[[]string]          `json:"test_slice,omitempty"`
+	TestMap      DataField[map[string]string] `json:"test_map,omitempty"`
+	TestBool     DataField[bool]              `json:"test_bool,omitempty"`
+	TestTime     DataField[time.Time]         `json:"test_time,omitempty"`
+	TestDuration DataField[time.Duration]     `json:"test_duration,omitempty"`
 
-	TestUnmodified DataField[string]            `json:"test_unmodified"`
-	TestNil        DataField[string]            `json:"test_nil"`
-	TestNilMap     DataField[map[string]string] `json:"test_nil_map"`
+	TestUnmodified DataField[string]            `json:"test_unmodified,omitempty"`
+	TestNil        DataField[string]            `json:"test_nil,omitempty"`
+	TestNilMap     DataField[map[string]string] `json:"test_nil_map,omitempty"`
 }
 
 type NestedTest struct {
-	TestString DataField[string] `json:"test_string"`
+	TestString DataField[string] `json:"test_string,omitempty"`
 	Nested     NestedNestedTest  `json:"nested"`
 }
 
 type NestedNestedTest struct {
-	TestString DataField[string] `json:"test_string"`
+	TestString DataField[string] `json:"test_string,omitempty"`
 }

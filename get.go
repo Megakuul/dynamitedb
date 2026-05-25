@@ -152,6 +152,9 @@ func checkFilter(original, filter reflect.Value) bool {
 		if filter.IsNil() {
 			return true
 		}
+		if original.IsNil() {
+			return false
+		}
 		return checkFilter(original.Elem(), filter.Elem())
 	}
 	if filter.Kind() != reflect.Struct {

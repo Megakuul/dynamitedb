@@ -8,16 +8,16 @@ Simple ST database engine running entirely on S3.
 type OrderItem struct {
 	OrderId     dynamitedb.KeyField          `pk:"order" json:"-"`
 	ItemId      dynamitedb.KeyField          `sk:"item" json:"-"`
-	Hidden      dynamitedb.DataField[bool]   `json:"hidden"`
-	Name        dynamitedb.DataField[string] `json:"name"`
-	Description dynamitedb.DataField[string] `json:"description"`
-	Count       dynamitedb.DataField[int]    `json:"count"`
-	Price       dynamitedb.DataField[int]    `json:"price"`
+	Hidden      dynamitedb.DataField[bool]   `json:"hidden,omitempty"`
+	Name        dynamitedb.DataField[string] `json:"name,omitempty"`
+	Description dynamitedb.DataField[string] `json:"description,omitempty"`
+	Count       dynamitedb.DataField[int]    `json:"count,omitempty"`
+	Price       dynamitedb.DataField[int]    `json:"price,omitempty"`
 }
 
 // do something with it:
 func example() error {
-    // create a bucket client
+	// create a bucket client
 	bucket, err := dynamitedb.New(context.TODO(), "http://127.0.0.1:3900", "test",
 		dynamitedb.WithCredentials("access_key", "secret_key"),
 		dynamitedb.WithRegion("garage"),
@@ -45,8 +45,8 @@ func example() error {
 	err = dynamitedb.Update(context.TODO(), bucket, &OrderItem{
 		OrderId: dynamitedb.Key("1"),
 		ItemId:  dynamitedb.Key("3"),
-		Count:   dynamitedb.Mul(2),
-		Price:   dynamitedb.Inc(1_000),
+		Count:   dynamitedb.Multiply(2),
+		Price:   dynamitedb.Increment(1_000),
 		Hidden:  dynamitedb.Toggle(),
 	})
 	if err != nil {
@@ -78,6 +78,10 @@ DynamiteDB schemas are defined as basic go structs using `KeyField` and `DataFie
 
 
 Serialization is done transparently by tagging fields with `json:""` tags 💡
+
+> [!TIP]
+> It is recommended to always use `omitempty`. 
+> Otherwise fields that are explicitly unset on deserialization and cannot be checked with e.g. `dynamitedb.Eq("")`.
 
 
 ### KeyFields

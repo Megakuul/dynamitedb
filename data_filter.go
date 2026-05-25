@@ -283,7 +283,7 @@ type lessOrEqThanFilter[T float64 | int | time.Duration] struct {
 
 func (q lessOrEqThanFilter[T]) filter(lhs reflect.Value) bool {
 	switch lhs.Kind() {
-	case reflect.Int:
+	case reflect.Int | reflect.Int64: // 64 for duration
 		return lhs.Int() <= int64(q.operand)
 	case reflect.Float64:
 		return lhs.Float() <= float64(q.operand)
