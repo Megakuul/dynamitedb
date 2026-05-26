@@ -23,7 +23,7 @@ func checkDeletes(t *testing.T, bucket *dynamitedb.Bucket) {
 		SortID:   dynamitedb.Key("1337"),
 		TestBool: dynamitedb.Eq(true),
 	})
-	if err != nil {
+	if err != nil && !errors.Is(err, dynamitedb.ErrFilterMismatch) {
 		t.Fatal(err)
 	}
 

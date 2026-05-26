@@ -14,7 +14,7 @@ import (
 )
 
 // Delete removes the specified object from database.
-// If the filter does not match an object this becomes a noop returning nil.
+// If the object does not exist this becomes a noop returning nil.
 func Delete[T any](ctx context.Context, bucket *Bucket, filter *T) error {
 	filterVal := reflect.ValueOf(filter)
 	key, exact, err := constructBucketKey(filterVal.Elem())
@@ -43,7 +43,7 @@ func Delete[T any](ctx context.Context, bucket *Bucket, filter *T) error {
 		return err
 	}
 	if !checkFilter(reflect.ValueOf(output), filterVal) {
-		return nil
+		return ErrFilterMismatch
 	}
 	_, err = bucket.client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket:  aws.String(bucket.name),

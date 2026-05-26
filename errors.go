@@ -6,6 +6,8 @@ import "errors"
 var (
 	// the specified object was not found
 	ErrNotFound = errors.New("not found")
+	// the specified object was found but the filter blocked it
+	ErrFilterMismatch = errors.New("filter mismatch")
 	// the object you want to insert does already exist
 	ErrAlreadyExists = errors.New("already exists")
 	// optimistic locking failure (operation aborted because another writer changed object mid transaction)

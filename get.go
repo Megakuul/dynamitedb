@@ -49,7 +49,7 @@ func Get[T any](ctx context.Context, bucket *Bucket, filter *T) (*T, error) {
 		return nil, fmt.Errorf("key writeback failed: %v", err)
 	}
 	if !checkFilter(outputVal, filterVal) {
-		return nil, ErrNotFound
+		return nil, ErrFilterMismatch
 	}
 	return outputVal.Interface().(*T), nil
 }
