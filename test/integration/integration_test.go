@@ -84,6 +84,10 @@ func TestOperations(t *testing.T) {
 		checkInserts(t, bucket)
 	})
 
+	t.Run("delete operations", func(t *testing.T) {
+		checkDeletes(t, bucket)
+	})
+
 	t.Run("query operations", func(t *testing.T) {
 		checkQueries(t, bucket)
 	})
