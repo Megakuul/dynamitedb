@@ -3,6 +3,10 @@
 
 Simple ST database engine running entirely on S3.
 
+```bash
+go get github.com/megakuul/dynamitedb
+```
+
 ```go
 // define schemas via KeyField and DataField:
 type OrderItem struct {
