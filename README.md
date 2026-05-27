@@ -21,10 +21,10 @@ type OrderItem struct {
 
 // do something with it:
 func example() error {
-	// create a bucket client
-	bucket, err := dynamitedb.New(context.TODO(), "http://127.0.0.1:3900", "test",
-		dynamitedb.WithCredentials("access_key", "secret_key"),
-		dynamitedb.WithRegion("garage"),
+	// create a bucket client to e.g. RustFS
+	bucket, err := dynamitedb.New(context.TODO(), "http://127.0.0.1:9000", "test",
+		dynamitedb.WithCredentials("rustfsadmin", "rustfsadmin"),
+		dynamitedb.WithRegion("us-east-1"),
 	)
 	if err != nil {
 		return err
@@ -230,6 +230,20 @@ DynamiteDB provides unit tests for important internal reflection functions (like
 
 In addition there are integration tests for all operations in the `test/integration/` directory.
 
+
+## Backend Support
+
+DynamiteDB requires a proper S3 compatible backend that supports `Conditional Locking`.
+
+Some operational backend inspiration:
+
+- [RustFS](https://github.com/rustfs/rustfs) (simple s3 with cool webui)
+- [Alarik](https://github.com/achtungsoftware/alarik) (simple s3 with cool webui (alpha))
+- [SeaweedFS](https://github.com/seaweedfs/seaweedfs) (battletested and not too complex)
+- [Ceph Rados Gateway](https://docs.ceph.com/en/reef/radosgw/) (battletested for massive workloads)
+
+> [!WARNING]
+> The `Garage` s3 project cannot be used since they do not support conditional locking! 
 
 ## Speed Notice
 
