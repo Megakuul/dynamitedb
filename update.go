@@ -52,11 +52,12 @@ func Update[T any](ctx context.Context, bucket *Bucket, update *T, opts ...Optio
 	}
 
 	_, err = bucket.client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket:  aws.String(bucket.name),
-		Key:     aws.String(key),
-		Body:    bytes.NewReader(updatedBody),
-		IfMatch: originalResp.ETag,
-		Expires: options.expires,
+		Bucket:      aws.String(bucket.name),
+		Key:         aws.String(key),
+		Body:        bytes.NewReader(updatedBody),
+		IfMatch:     originalResp.ETag,
+		Expires:     options.expires,
+		ContentType: aws.String("application/json"),
 	})
 	if err != nil {
 		var sErr smithy.APIError
