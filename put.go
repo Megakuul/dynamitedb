@@ -33,10 +33,11 @@ func Put[T any](ctx context.Context, bucket *Bucket, model *T, opts ...Option) e
 		opt(options)
 	}
 	_, err = bucket.client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket:  aws.String(bucket.name),
-		Key:     aws.String(key),
-		Body:    bytes.NewReader(body),
-		Expires: options.expires,
+		Bucket:      aws.String(bucket.name),
+		Key:         aws.String(key),
+		Body:        bytes.NewReader(body),
+		Expires:     options.expires,
+		ContentType: aws.String("application/json"),
 	})
 	if err != nil {
 		return errors.New(err.Error())

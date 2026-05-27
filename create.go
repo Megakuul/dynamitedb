@@ -40,6 +40,7 @@ func Create[T any](ctx context.Context, bucket *Bucket, model *T, opts ...Option
 		Body:        bytes.NewReader(body),
 		IfNoneMatch: aws.String("*"),
 		Expires:     options.expires,
+		ContentType: aws.String("application/json"),
 	})
 	if err != nil {
 		var sErr smithy.APIError
