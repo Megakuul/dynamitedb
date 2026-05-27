@@ -73,7 +73,7 @@ func NewFromClient(client *s3.Client, bucket string) *Bucket {
 	}
 }
 
-var keySanitizer = regexp.MustCompile("^[A-Za-z0-9@._-]{1,100}$")
+var keySanitizer = regexp.MustCompile("^[A-Za-z0-9@._-]{0,100}$")
 
 // constructBucketKey extracts, sanitizes and constructs an s3 bucket key string from the schema.
 // Returns the raw s3 bucket key and whether it is an exact match or a prefix.
@@ -82,7 +82,8 @@ func constructBucketKey(filter reflect.Value) (string, bool, error) {
 	if err != nil {
 		return "", false, err
 	}
-	if !keySanitizer.MatchString(partVal) {
+	// allow empty part keys for non-exact matches.
+	if !keySanitizer.MatchString(partVal) && (!partExact || len(partVal) > 0) {
 		return "", false, fmt.Errorf("database partition key is malformed or contains unsafe characters")
 	}
 
@@ -90,7 +91,8 @@ func constructBucketKey(filter reflect.Value) (string, bool, error) {
 	if err != nil {
 		return "", false, err
 	}
-	if sortKey != "" && !keySanitizer.MatchString(sortVal) {
+	// allow no sort key, and empty sort keys for non-exact matches.
+	if sortKey != "" && !keySanitizer.MatchString(sortVal) && (!sortExact || len(sortVal) > 0) {
 		return "", false, fmt.Errorf("database sort key is malformed or contains unsafe characters")
 	}
 
