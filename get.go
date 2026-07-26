@@ -85,6 +85,7 @@ func Query[T any](ctx context.Context, bucket *Bucket, filter *T, opts ...Option
 		Bucket:     aws.String(bucket.name),
 		Prefix:     aws.String(key),
 		StartAfter: options.startAfter,
+		Delimiter:  new("/"),
 	})
 
 	for paginator.HasMorePages() {
