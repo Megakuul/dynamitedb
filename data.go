@@ -2,19 +2,13 @@ package dynamitedb
 
 import (
 	"reflect"
-	"time"
 )
-
-// dataConstraint simply wraps all supported dynamite types to avoid boilerplate.
-type dataConstraint interface {
-	string | int | float64 | bool | time.Time | time.Duration | []string | map[string]string
-}
 
 // DataField defines a dynamite data field (initialize with dynamitedb.Data("blub")).
 // Use Value() to retrieve the underlying value.
 // The reason for this abstraction is that it allows you to use the model struct
 // as filter, update and insert structure aswell.
-type DataField[T dataConstraint] interface {
+type DataField[T any] interface {
 	// Value returns the raw data value.
 	Value() T
 	// update executes an update expr on the value and returns the new value.
@@ -39,12 +33,12 @@ func (dataFallback[T]) filter(reflect.Value) bool {
 	panic("incorrect DataField usage: cannot use value or update as filter operator")
 }
 
-func newData[T dataConstraint](v T) *data[T] {
+func newData[T any](v T) *data[T] {
 	return &data[T]{data: v}
 }
 
 // internal data interface used only for returned values.
-type data[T dataConstraint] struct {
+type data[T any] struct {
 	dataFallback[T]
 	data T
 }

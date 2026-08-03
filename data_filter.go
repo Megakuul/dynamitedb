@@ -9,27 +9,27 @@ import (
 
 // CustomFilter allows you to perform a custom filter check on the field.
 // This is a filter operator.
-func CustomFilter[T dataConstraint](check func(databaseValue T) bool) *customFilter[T] {
+func CustomFilter[T any](check func(databaseValue T) bool) *customFilter[T] {
 	return &customFilter[T]{check: check}
 }
 
 // Eq checks for an exact match with the operand.
 // For slices and map this enforces a deep equal state.
 // This is a filter operator.
-func Eq[T dataConstraint](operand T) *eqFilter[T] {
+func Eq[T any](operand T) *eqFilter[T] {
 	return &eqFilter[T]{rhs: reflect.ValueOf(operand)}
 }
 
 // NotEq is just !Eq.
 // This is a filter operator.
-func NotEq[T dataConstraint](operand T) *notEqFilter[T] {
+func NotEq[T any](operand T) *notEqFilter[T] {
 	return &notEqFilter[T]{rhs: reflect.ValueOf(operand)}
 }
 
 // In checks if the database value is inside the provided list.
 // Functionally equivalent to Eq but just with an operand for loop.
 // This is a filter operator.
-func In[T dataConstraint](operands ...T) inFilter[T] {
+func In[T any](operands ...T) inFilter[T] {
 	rhsSlice := make([]reflect.Value, len(operands))
 	for i, operand := range operands {
 		rhsSlice[i] = reflect.ValueOf(operand)
@@ -39,7 +39,7 @@ func In[T dataConstraint](operands ...T) inFilter[T] {
 
 // NotIn is just !In.
 // This is a filter operator.
-func NotIn[T dataConstraint](operands ...T) notInFilter[T] {
+func NotIn[T any](operands ...T) notInFilter[T] {
 	rhsSlice := make([]reflect.Value, len(operands))
 	for i, operand := range operands {
 		rhsSlice[i] = reflect.ValueOf(operand)
@@ -55,14 +55,14 @@ func Includes[T string](operand string) *includesFilter[T] {
 
 // Contains checks if the slice contains all of the operands.
 // This is a filter operator.
-func Contains[T []string](operands ...string) *containsFilter[T] {
+func Contains[T comparable](operands ...T) *containsFilter[T] {
 	return &containsFilter[T]{searches: operands}
 }
 
 // Has checks if the map contains the specified key value pair.
 // This is a filter operator.
-func Has[T map[string]string](key, value string) *hasFilter[T] {
-	return &hasFilter[T]{key: key, value: value}
+func Has[K, V comparable](key K, value V) *hasFilter[K, V] {
+	return &hasFilter[K, V]{key: key, value: value}
 }
 
 // Before checks if the database value is before the specified time.
@@ -177,13 +177,13 @@ func (q includesFilter[T]) filter(lhs reflect.Value) bool {
 	return lhs.Kind() == reflect.String && strings.Contains(lhs.String(), q.search)
 }
 
-type containsFilter[T []string] struct {
-	dataFallback[T]
-	searches []string
+type containsFilter[T comparable] struct {
+	dataFallback[[]T]
+	searches []T
 }
 
 func (q containsFilter[T]) filter(lhs reflect.Value) bool {
-	if slice, _ := lhs.Interface().([]string); slice != nil {
+	if slice, _ := lhs.Interface().([]T); slice != nil {
 		for _, search := range q.searches {
 			if !slices.Contains(slice, search) {
 				return false
@@ -194,13 +194,14 @@ func (q containsFilter[T]) filter(lhs reflect.Value) bool {
 	return false
 }
 
-type hasFilter[T map[string]string] struct {
-	dataFallback[T]
-	key, value string
+type hasFilter[K, V comparable] struct {
+	dataFallback[map[K]V]
+	key   K
+	value V
 }
 
-func (q hasFilter[T]) filter(lhs reflect.Value) bool {
-	hashmap, _ := lhs.Interface().(map[string]string)
+func (q hasFilter[K, V]) filter(lhs reflect.Value) bool {
+	hashmap, _ := lhs.Interface().(map[K]V)
 	return hashmap != nil && hashmap[q.key] == q.value
 }
 

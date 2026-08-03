@@ -129,7 +129,7 @@ func applyUpdate(original, update reflect.Value) {
 }
 
 // applyFieldUpdate applies the defined update operation from "update" to "original".
-func applyFieldUpdate[T dataConstraint](original, update reflect.Value, index []int) {
+func applyFieldUpdate[T any](original, update reflect.Value, index []int) {
 	updateField, ok := update.FieldByIndex(index).Interface().(DataField[T])
 	if !ok {
 		return

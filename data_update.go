@@ -7,13 +7,13 @@ import (
 
 // CustomUpdate allows you to perform a custom update action on the field.
 // This is an update operator.
-func CustomUpdate[T dataConstraint](update func(databaseValue T) (updatedValue T)) *customUpdate[T] {
+func CustomUpdate[T any](update func(databaseValue T) (updatedValue T)) *customUpdate[T] {
 	return &customUpdate[T]{change: update}
 }
 
 // Set simply overwrites the previous value.
 // This is an update operator.
-func Set[T dataConstraint](operand T) *setUpdate[T] {
+func Set[T any](operand T) *setUpdate[T] {
 	return &setUpdate[T]{new: operand}
 }
 
@@ -59,11 +59,11 @@ func Remove[T []string](items ...string) *removeUpdate[T] {
 
 // Emplace updates the previous map with the provided new kv pairs.
 // This is an update operator.
-func Emplace[T map[string]string](operand T) *emplaceUpdate[T] {
-	return &emplaceUpdate[T]{new: operand}
+func Emplace[K comparable, V any](operand map[K]V) *emplaceUpdate[K, V] {
+	return &emplaceUpdate[K, V]{new: operand}
 }
 
-type customUpdate[T dataConstraint] struct {
+type customUpdate[T any] struct {
 	dataFallback[T]
 	change func(T) T
 }
@@ -72,7 +72,7 @@ func (u customUpdate[T]) update(original T) T {
 	return u.change(original)
 }
 
-type setUpdate[T dataConstraint] struct {
+type setUpdate[T any] struct {
 	dataFallback[T]
 	new T
 }
@@ -144,14 +144,14 @@ func (u removeUpdate[T]) update(original T) T {
 	return newSlice
 }
 
-type emplaceUpdate[T map[string]string] struct {
-	dataFallback[T]
-	new T
+type emplaceUpdate[K comparable, V any] struct {
+	dataFallback[map[K]V]
+	new map[K]V
 }
 
-func (u emplaceUpdate[T]) update(original T) T {
+func (u emplaceUpdate[K, V]) update(original map[K]V) map[K]V {
 	if original == nil {
-		original = make(T)
+		original = make(map[K]V)
 	}
 	maps.Copy(original, u.new)
 	return original

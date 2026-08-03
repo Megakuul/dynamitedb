@@ -213,7 +213,7 @@ func checkFilter(original, filter reflect.Value) bool {
 }
 
 // checkFieldFilter applies the filter to original and returns whether it matches.
-func checkFieldFilter[T dataConstraint](original, filter reflect.Value, index []int) bool {
+func checkFieldFilter[T any](original, filter reflect.Value, index []int) bool {
 	filterField, ok := filter.FieldByIndex(index).Interface().(DataField[T])
 	if !ok {
 		return true
