@@ -43,14 +43,14 @@ func Add[T time.Time](operand time.Duration) *addUpdate[T] {
 
 // Append appends the items to the previous slice.
 // This is an update operator.
-func Append[T []string](items ...string) *appendUpdate[T] {
+func Append[T any](items ...T) *appendUpdate[T] {
 	return &appendUpdate[T]{new: items}
 }
 
 // Remove removes the provided items from the slice.
 // This is an update operator.
-func Remove[T []string](items ...string) *removeUpdate[T] {
-	remove := map[string]bool{}
+func Remove[T comparable](items ...T) *removeUpdate[T] {
+	remove := map[T]bool{}
 	for _, item := range items {
 		remove[item] = true
 	}
@@ -119,22 +119,22 @@ func (u addUpdate[T]) update(original T) T {
 	return original
 }
 
-type appendUpdate[T []string] struct {
-	dataFallback[T]
-	new T
+type appendUpdate[T any] struct {
+	dataFallback[[]T]
+	new []T
 }
 
-func (u appendUpdate[T]) update(original T) T {
+func (u appendUpdate[T]) update(original []T) []T {
 	return append(original, u.new...)
 }
 
-type removeUpdate[T []string] struct {
-	dataFallback[T]
-	remove map[string]bool
+type removeUpdate[T comparable] struct {
+	dataFallback[[]T]
+	remove map[T]bool
 }
 
-func (u removeUpdate[T]) update(original T) T {
-	newSlice := make(T, 0, len(original))
+func (u removeUpdate[T]) update(original []T) []T {
+	newSlice := make([]T, 0, len(original))
 	for _, item := range original {
 		if u.remove[item] {
 			continue
