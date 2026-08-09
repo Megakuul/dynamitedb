@@ -57,7 +57,7 @@ func Update[T any](ctx context.Context, bucket *Bucket, update *T, opts ...Optio
 		Body:        bytes.NewReader(updatedBody),
 		IfMatch:     originalResp.ETag,
 		Expires:     options.expires,
-		ContentType: aws.String("application/json"),
+		ContentType: aws.String("application/cbor"),
 	})
 	if err != nil {
 		var sErr smithy.APIError

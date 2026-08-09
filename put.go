@@ -37,7 +37,7 @@ func Put[T any](ctx context.Context, bucket *Bucket, model *T, opts ...Option) e
 		Key:         aws.String(key),
 		Body:        bytes.NewReader(body),
 		Expires:     options.expires,
-		ContentType: aws.String("application/json"),
+		ContentType: aws.String("application/cbor"),
 	})
 	if err != nil {
 		return errors.New(err.Error())

@@ -18,30 +18,30 @@ import (
 )
 
 type Test struct {
-	PartID       dynamitedb.KeyField                     `pk:"part" json:"-"`
-	SortID       dynamitedb.KeyField                     `sk:"sort" json:"-"`
-	Nested       *NestedTest                             `json:"nested,omitempty"`
-	TestString   dynamitedb.DataField[string]            `json:"test_string,omitempty"`
-	TestInt      dynamitedb.DataField[int]               `json:"test_int,omitempty"`
-	TestFloat    dynamitedb.DataField[float64]           `json:"test_float,omitempty"`
-	TestSlice    dynamitedb.DataField[[]string]          `json:"test_slice,omitempty"`
-	TestMap      dynamitedb.DataField[map[string]string] `json:"test_map,omitempty"`
-	TestBool     dynamitedb.DataField[bool]              `json:"test_bool,omitempty"`
-	TestTime     dynamitedb.DataField[time.Time]         `json:"test_time,omitempty"`
-	TestDuration dynamitedb.DataField[time.Duration]     `json:"test_duration,omitempty"`
+	PartID       dynamitedb.KeyField                     `pk:"part" cbor:"-"`
+	SortID       dynamitedb.KeyField                     `sk:"sort" cbor:"-"`
+	Nested       *NestedTest                             `cbor:"nested,omitempty"`
+	TestString   dynamitedb.DataField[string]            `cbor:"test_string,omitempty"`
+	TestInt      dynamitedb.DataField[int]               `cbor:"test_int,omitempty"`
+	TestFloat    dynamitedb.DataField[float64]           `cbor:"test_float,omitempty"`
+	TestSlice    dynamitedb.DataField[[]string]          `cbor:"test_slice,omitempty"`
+	TestMap      dynamitedb.DataField[map[string]string] `cbor:"test_map,omitempty"`
+	TestBool     dynamitedb.DataField[bool]              `cbor:"test_bool,omitempty"`
+	TestTime     dynamitedb.DataField[time.Time]         `cbor:"test_time,omitempty"`
+	TestDuration dynamitedb.DataField[time.Duration]     `cbor:"test_duration,omitempty"`
 
-	TestUnmodified dynamitedb.DataField[string]            `json:"test_unmodified,omitempty"`
-	TestNil        dynamitedb.DataField[string]            `json:"test_nil,omitempty"`
-	TestNilMap     dynamitedb.DataField[map[string]string] `json:"test_nil_map,omitempty"`
+	TestUnmodified dynamitedb.DataField[string]            `cbor:"test_unmodified,omitempty"`
+	TestNil        dynamitedb.DataField[string]            `cbor:"test_nil,omitempty"`
+	TestNilMap     dynamitedb.DataField[map[string]string] `cbor:"test_nil_map,omitempty"`
 }
 
 type NestedTest struct {
-	TestString dynamitedb.DataField[string] `json:"test_string,omitempty"`
-	Nested     NestedNestedTest             `json:"nested"`
+	TestString dynamitedb.DataField[string] `cbor:"test_string,omitempty"`
+	Nested     NestedNestedTest             `cbor:"nested"`
 }
 
 type NestedNestedTest struct {
-	TestString dynamitedb.DataField[string] `json:"test_string,omitempty"`
+	TestString dynamitedb.DataField[string] `cbor:"test_string,omitempty"`
 }
 
 func TestOperations(t *testing.T) {

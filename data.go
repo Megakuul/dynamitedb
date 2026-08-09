@@ -47,7 +47,7 @@ func (v data[T]) Value() T {
 	return v.data
 }
 
-func (v *data[T]) UnmarshalJSON(data []byte) error {
+func (v *data[T]) UnmarshalCBOR(data []byte) error {
 	newKey, err := deserialize[T](data)
 	if err != nil {
 		return err
@@ -56,6 +56,6 @@ func (v *data[T]) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (v data[T]) MarshalJSON() ([]byte, error) {
+func (v data[T]) MarshalCBOR() ([]byte, error) {
 	return serialize(v.data)
 }

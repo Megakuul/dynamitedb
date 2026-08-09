@@ -10,13 +10,13 @@ go get github.com/megakuul/dynamitedb
 ```go
 // define schemas via KeyField and DataField:
 type OrderItem struct {
-	OrderId     dynamitedb.KeyField          `pk:"order" json:"-"`
-	ItemId      dynamitedb.KeyField          `sk:"item" json:"-"`
-	Hidden      dynamitedb.DataField[bool]   `json:"hidden,omitempty"`
-	Name        dynamitedb.DataField[string] `json:"name,omitempty"`
-	Description dynamitedb.DataField[string] `json:"description,omitempty"`
-	Count       dynamitedb.DataField[int]    `json:"count,omitempty"`
-	Price       dynamitedb.DataField[int]    `json:"price,omitempty"`
+	OrderId     dynamitedb.KeyField          `pk:"order" cbor:"-"`
+	ItemId      dynamitedb.KeyField          `sk:"item" cbor:"-"`
+	Hidden      dynamitedb.DataField[bool]   `cbor:"hidden,omitempty"`
+	Name        dynamitedb.DataField[string] `cbor:"name,omitempty"`
+	Description dynamitedb.DataField[string] `cbor:"description,omitempty"`
+	Count       dynamitedb.DataField[int]    `cbor:"count,omitempty"`
+	Price       dynamitedb.DataField[int]    `cbor:"price,omitempty"`
 }
 
 // do something with it:
@@ -81,7 +81,7 @@ func example() error {
 DynamiteDB schemas are defined as basic go structs using `KeyField` and `DataField` interfaces.
 
 
-Serialization is done transparently by tagging fields with `json:""` tags 💡
+Serialization is done transparently by tagging fields with `cbor:""` tags 💡
 
 > [!TIP]
 > It is recommended to always use `omitempty`. 
@@ -96,8 +96,8 @@ Use the tag `pk` and `sk` to define their respective names. The sort key is opti
 
 ```go
 type OrderItem struct {
-    OrderId dynamitedb.KeyField `pk:"order" json:"-"` // equivalent to a dynamodb pk ORDER#<id>
-    ItemId  dynamitedb.KeyField `sk:"item" json:"-"`  // equivalent to a dynamodb sk ITEM#<id>
+    OrderId dynamitedb.KeyField `pk:"order" cbor:"-"` // equivalent to a dynamodb pk ORDER#<id>
+    ItemId  dynamitedb.KeyField `sk:"item" cbor:"-"`  // equivalent to a dynamodb sk ITEM#<id>
 }
 ```
 
@@ -114,14 +114,14 @@ DataFields are used for mutable data. They are generic and only allow a certain 
 - `[]string`
 - `map[string]string`
 
-Since serialization is handled transparently by a json marshaller you can also use any other marshallable type on the schema.
+Since serialization is handled transparently by a cbor marshaller you can also use any other marshallable type on the schema.
 However, all fields that are not DataFields become immutable after insertion and cannot be changed or filtered!
 
 ```go
 type OrderItem struct {
-    OrderId  dynamitedb.KeyField `pk:"order" json:"-"`
-    ItemId   dynamitedb.KeyField `sk:"item" json:"-"`
-    StaticId uuid.UUID           `json:"static_id"` // <- this is allowed but immutable and non-filterable
+    OrderId  dynamitedb.KeyField `pk:"order" cbor:"-"`
+    ItemId   dynamitedb.KeyField `sk:"item" cbor:"-"`
+    StaticId uuid.UUID           `cbor:"static_id"` // <- this is allowed but immutable and non-filterable
 }
 ```
 
@@ -129,16 +129,16 @@ Nested datafields in structs are also allowed:
 
 ```go
 type Description struct {
-    Title   dynamitedb.DataField[string] `json:"title"`
-    Tooltip dynamitedb.DataField[string] `json:"tooltip"`
-    Text    dynamitedb.DataField[string] `json:"text"`
+    Title   dynamitedb.DataField[string] `cbor:"title"`
+    Tooltip dynamitedb.DataField[string] `cbor:"tooltip"`
+    Text    dynamitedb.DataField[string] `cbor:"text"`
 }
 
 type OrderItem struct {
-    OrderId     dynamitedb.KeyField            `pk:"order" json:"-"`
-    ItemId      dynamitedb.KeyField            `sk:"item" json:"-"`
-    Description Description                    `json:"description"` // <- this is allowed
-    Invalid     []dynamitedb.DataField[string] `json:"invalid"`     // <- this is NOT allowed
+    OrderId     dynamitedb.KeyField            `pk:"order" cbor:"-"`
+    ItemId      dynamitedb.KeyField            `sk:"item" cbor:"-"`
+    Description Description                    `cbor:"description"` // <- this is allowed
+    Invalid     []dynamitedb.DataField[string] `cbor:"invalid"`     // <- this is NOT allowed
 }
 ```
 

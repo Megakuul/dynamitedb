@@ -1,15 +1,30 @@
 package dynamitedb
 
 import (
-	"encoding/json"
 	"reflect"
 	"time"
+
+	"github.com/fxamacker/cbor/v2"
 )
+
+var encoderOpts = cbor.EncOptions{
+	Time: cbor.TimeRFC3339Nano,
+}
+
+var decoderOpts = cbor.DecOptions{
+	MaxArrayElements: 10000,
+	MaxMapPairs:      5000,
+	MaxNestedLevels:  16,
+}
+
+var decoder, _ = decoderOpts.DecMode()
+
+var encoder, _ = encoderOpts.EncMode()
 
 // serializes the structure into raw database representation.
 // reason for this wrapper is to run consistent tests and to be able to swap the underlying marshaller.
 func serialize[T any](model T) ([]byte, error) {
-	return json.Marshal(model)
+	return encoder.Marshal(model)
 }
 
 // deserializes the raw database representation into a model structure.
@@ -19,7 +34,7 @@ func deserialize[T any](data []byte) (*T, error) {
 	newVal := reflect.New(reflect.TypeFor[T]())
 	initModel(newVal)
 	new := newVal.Interface().(*T)
-	if err := json.Unmarshal(data, new); err != nil {
+	if err := decoder.Unmarshal(data, new); err != nil {
 		return nil, err
 	}
 	return new, nil
