@@ -9,6 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/smithy-go"
 )
 
 // Put inserts the provided structure to the database (replaces previous data).
@@ -20,6 +21,7 @@ func Put[T any](ctx context.Context, bucket *Bucket, model *T, opts ...Option) e
 	} else if !exact {
 		return fmt.Errorf("put database call requires exact key match")
 	}
+	etag := retrieveETag(modelVal.Elem())
 	insert := reflect.New(reflect.TypeFor[T]())
 	applyUpdate(insert, modelVal)
 	body, err := serialize(insert.Interface().(*T))
@@ -38,8 +40,13 @@ func Put[T any](ctx context.Context, bucket *Bucket, model *T, opts ...Option) e
 		Body:        bytes.NewReader(body),
 		Expires:     options.expires,
 		ContentType: aws.String("application/cbor"),
+		IfMatch:     etag,
 	})
 	if err != nil {
+		var sErr smithy.APIError
+		if errors.As(err, &sErr) && sErr.ErrorCode() == "PreconditionFailed" {
+			return ErrConcurrencyConflict
+		}
 		return errors.New(err.Error())
 	}
 	return nil

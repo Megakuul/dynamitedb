@@ -23,16 +23,26 @@ func Delete[T any](ctx context.Context, bucket *Bucket, filter *T) error {
 	} else if !exact {
 		return fmt.Errorf("delete database call requires exact key match")
 	}
+	etag := retrieveETag(filterVal.Elem())
 
 	resp, err := bucket.client.GetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(bucket.name),
-		Key:    aws.String(key),
+		Bucket:  aws.String(bucket.name),
+		Key:     aws.String(key),
+		IfMatch: etag,
 	})
 	if err != nil {
+		var sErr smithy.APIError
+		if errors.As(err, &sErr) && sErr.ErrorCode() == "PreconditionFailed" {
+			return ErrConcurrencyConflict
+		}
 		if _, ok := errors.AsType[*types.NoSuchKey](err); ok {
 			return nil
 		}
 		return errors.New(err.Error())
+	}
+	// certain providers do not implement IfMatch on GetObject. Therefore this extra check.
+	if etag != nil && *resp.ETag != *etag {
+		return ErrConcurrencyConflict
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

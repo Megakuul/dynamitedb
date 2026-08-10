@@ -48,6 +48,7 @@ func Get[T any](ctx context.Context, bucket *Bucket, filter *T) (*T, error) {
 	if err := injectBucketKey(outputVal.Elem(), key); err != nil {
 		return nil, fmt.Errorf("key writeback failed: %v", err)
 	}
+	injectETag(outputVal.Elem(), *resp.ETag)
 	if !checkFilter(outputVal, filterVal) {
 		return nil, ErrFilterMismatch
 	}
@@ -124,6 +125,7 @@ func Query[T any](ctx context.Context, bucket *Bucket, filter *T, opts ...Option
 					if err := injectBucketKey(outputVal.Elem(), *object.Key); err != nil {
 						return fmt.Errorf("key writeback failed: %v", err)
 					}
+					injectETag(outputVal.Elem(), *resp.ETag)
 					if !checkFilter(outputVal, filterVal) {
 						return nil
 					}
@@ -166,7 +168,7 @@ func checkFilter(original, filter reflect.Value) bool {
 			continue
 		}
 		switch field.Type {
-		case reflect.TypeFor[KeyField]():
+		case reflect.TypeFor[KeyField](), reflect.TypeFor[ETagField]():
 			continue
 		case reflect.TypeFor[DataField[string]]():
 			if !checkFieldFilter[string](original, filter, field.Index) {

@@ -20,6 +20,7 @@ import (
 type Test struct {
 	PartID       dynamitedb.KeyField                     `pk:"part" cbor:"-"`
 	SortID       dynamitedb.KeyField                     `sk:"sort" cbor:"-"`
+	ETag         dynamitedb.ETagField                    `etag:"true" cbor:"-"`
 	Nested       *NestedTest                             `cbor:"nested,omitempty"`
 	TestString   dynamitedb.DataField[string]            `cbor:"test_string,omitempty"`
 	TestInt      dynamitedb.DataField[int]               `cbor:"test_int,omitempty"`
@@ -86,6 +87,10 @@ func TestOperations(t *testing.T) {
 
 	t.Run("delete operations", func(t *testing.T) {
 		checkDeletes(t, bucket)
+	})
+
+	t.Run("etag rollback", func(t *testing.T) {
+		checkETag(t, bucket)
 	})
 
 	t.Run("query operations", func(t *testing.T) {

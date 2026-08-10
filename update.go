@@ -19,12 +19,14 @@ import (
 // For update operations see "Field" API on the schema.
 // Update will modify v to represent the final state of the updated entry.
 func Update[T any](ctx context.Context, bucket *Bucket, update *T, opts ...Option) error {
-	key, exact, err := constructBucketKey(reflect.ValueOf(update).Elem())
+	modelVal := reflect.ValueOf(update)
+	key, exact, err := constructBucketKey(modelVal.Elem())
 	if err != nil {
 		return err
 	} else if !exact {
 		return fmt.Errorf("update database call requires exact key match")
 	}
+	etag := retrieveETag(modelVal.Elem())
 	options := &options{
 		expires: nil,
 	}
@@ -32,14 +34,23 @@ func Update[T any](ctx context.Context, bucket *Bucket, update *T, opts ...Optio
 		opt(options)
 	}
 	originalResp, err := bucket.client.GetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(bucket.name),
-		Key:    aws.String(key),
+		Bucket:  aws.String(bucket.name),
+		Key:     aws.String(key),
+		IfMatch: etag,
 	})
 	if err != nil {
+		var sErr smithy.APIError
+		if errors.As(err, &sErr) && sErr.ErrorCode() == "PreconditionFailed" {
+			return ErrConcurrencyConflict
+		}
 		if _, ok := errors.AsType[*types.NoSuchKey](err); ok {
 			return ErrNotFound
 		}
 		return errors.New(err.Error())
+	}
+	// certain providers do not implement IfMatch on GetObject. Therefore this extra check.
+	if etag != nil && *originalResp.ETag != *etag {
+		return ErrConcurrencyConflict
 	}
 	originalBody, err := io.ReadAll(originalResp.Body)
 	if err != nil {

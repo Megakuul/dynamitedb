@@ -104,7 +104,7 @@ func constructBucketKey(filter reflect.Value) (string, bool, error) {
 	}
 }
 
-// retrievePartKey extracts the partition key and partition key value from the schema.
+// retrievePartKey extracts the partition key and partition key value from the filter.
 // Returns partKey, partValue and if it requires an exactMatch.
 func retrievePartKey(filter reflect.Value) (string, string, bool, error) {
 	for field := range filter.Fields() {
