@@ -7,6 +7,12 @@ import (
 	"time"
 )
 
+// filterable defines the interface that must be implemented for a field to be used as filter.
+type filterable interface {
+	// filter checks if the provided model matches on this field.
+	filter(reflect.Value) bool
+}
+
 // CustomFilter allows you to perform a custom filter check on the field.
 // This is a filter operator.
 func CustomFilter[T any](check func(databaseValue T) bool) *customFilter[T] {
@@ -62,7 +68,7 @@ func Contains[T comparable](operands ...T) *containsFilter[T] {
 // Has checks if the map contains the specified key value pair.
 // This is a filter operator.
 func Has[K, V comparable](key K, value V) *hasFilter[K, V] {
-	return &hasFilter[K, V]{key: key, value: value}
+	return &hasFilter[K, V]{key: key, val: value}
 }
 
 // Before checks if the database value is before the specified time.
@@ -101,8 +107,10 @@ func LessOrEqThan[T int | float64 | time.Duration](operand T) *lessOrEqThanFilte
 	return &lessOrEqThanFilter[T]{operand: operand}
 }
 
+var _ DataField[string] = customFilter[string]{}
+
 type customFilter[T any] struct {
-	dataFallback[T]
+	dataField[T]
 	check func(T) bool
 }
 
@@ -113,8 +121,10 @@ func (q customFilter[T]) filter(lhs reflect.Value) bool {
 	return false
 }
 
+var _ DataField[string] = eqFilter[string]{}
+
 type eqFilter[T any] struct {
-	dataFallback[T]
+	dataField[T]
 	rhs reflect.Value
 }
 
@@ -128,8 +138,10 @@ func (q eqFilter[T]) filter(lhs reflect.Value) bool {
 	return reflect.DeepEqual(q.rhs.Interface(), lhs.Interface())
 }
 
+var _ DataField[string] = notEqFilter[string]{}
+
 type notEqFilter[T any] struct {
-	dataFallback[T]
+	dataField[T]
 	rhs reflect.Value
 }
 
@@ -137,8 +149,10 @@ func (q notEqFilter[T]) filter(lhs reflect.Value) bool {
 	return !(eqFilter[T]{rhs: q.rhs}).filter(lhs)
 }
 
+var _ DataField[string] = inFilter[string]{}
+
 type inFilter[T any] struct {
-	dataFallback[T]
+	dataField[T]
 	rhsSlice []reflect.Value
 }
 
@@ -159,8 +173,10 @@ func (q inFilter[T]) filter(lhs reflect.Value) bool {
 	return false
 }
 
+var _ DataField[string] = notInFilter[string]{}
+
 type notInFilter[T any] struct {
-	dataFallback[T]
+	dataField[T]
 	rhsSlice []reflect.Value
 }
 
@@ -168,8 +184,10 @@ func (q notInFilter[T]) filter(lhs reflect.Value) bool {
 	return !(inFilter[T]{rhsSlice: q.rhsSlice}).filter(lhs)
 }
 
+var _ DataField[string] = includesFilter[string]{}
+
 type includesFilter[T string] struct {
-	dataFallback[T]
+	dataField[T]
 	search string
 }
 
@@ -177,8 +195,10 @@ func (q includesFilter[T]) filter(lhs reflect.Value) bool {
 	return lhs.Kind() == reflect.String && strings.Contains(lhs.String(), q.search)
 }
 
+var _ DataField[[]string] = containsFilter[string]{}
+
 type containsFilter[T comparable] struct {
-	dataFallback[[]T]
+	dataField[[]T]
 	searches []T
 }
 
@@ -194,19 +214,23 @@ func (q containsFilter[T]) filter(lhs reflect.Value) bool {
 	return false
 }
 
+var _ DataField[map[string]string] = hasFilter[string, string]{}
+
 type hasFilter[K, V comparable] struct {
-	dataFallback[map[K]V]
-	key   K
-	value V
+	dataField[map[K]V]
+	key K
+	val V
 }
 
 func (q hasFilter[K, V]) filter(lhs reflect.Value) bool {
 	hashmap, _ := lhs.Interface().(map[K]V)
-	return hashmap != nil && hashmap[q.key] == q.value
+	return hashmap != nil && hashmap[q.key] == q.val
 }
 
+var _ DataField[time.Time] = afterFilter[time.Time]{}
+
 type afterFilter[T time.Time] struct {
-	dataFallback[T]
+	dataField[T]
 	operand T
 }
 
@@ -217,8 +241,10 @@ func (q afterFilter[T]) filter(lhs reflect.Value) bool {
 	return false
 }
 
+var _ DataField[time.Time] = beforeFilter[time.Time]{}
+
 type beforeFilter[T time.Time] struct {
-	dataFallback[T]
+	dataField[T]
 	operand T
 }
 
@@ -229,8 +255,10 @@ func (q beforeFilter[T]) filter(lhs reflect.Value) bool {
 	return false
 }
 
+var _ DataField[float64] = greaterThanFilter[float64]{}
+
 type greaterThanFilter[T float64 | int | time.Duration] struct {
-	dataFallback[T]
+	dataField[T]
 	operand T
 }
 
@@ -245,8 +273,10 @@ func (q greaterThanFilter[T]) filter(lhs reflect.Value) bool {
 	}
 }
 
+var _ DataField[float64] = greaterOrEqThanFilter[float64]{}
+
 type greaterOrEqThanFilter[T float64 | int | time.Duration] struct {
-	dataFallback[T]
+	dataField[T]
 	operand T
 }
 
@@ -261,8 +291,10 @@ func (q greaterOrEqThanFilter[T]) filter(lhs reflect.Value) bool {
 	}
 }
 
+var _ DataField[float64] = lessThanFilter[float64]{}
+
 type lessThanFilter[T float64 | int | time.Duration] struct {
-	dataFallback[T]
+	dataField[T]
 	operand T
 }
 
@@ -277,8 +309,10 @@ func (q lessThanFilter[T]) filter(lhs reflect.Value) bool {
 	}
 }
 
+var _ DataField[float64] = lessOrEqThanFilter[float64]{}
+
 type lessOrEqThanFilter[T float64 | int | time.Duration] struct {
-	dataFallback[T]
+	dataField[T]
 	operand T
 }
 

@@ -2,8 +2,15 @@ package dynamitedb
 
 import (
 	"maps"
+	"reflect"
 	"time"
 )
+
+// settable defines the interface that must be implemented for fields that can be updated.
+type settable interface {
+	// set changes the field data by taking the old raw value in and returning an updated value wrapped as data implementation.
+	set(reflect.Value) reflect.Value
+}
 
 // CustomUpdate allows you to perform a custom update action on the field.
 // This is an update operator.
@@ -63,96 +70,119 @@ func Emplace[K comparable, V any](operand map[K]V) *emplaceUpdate[K, V] {
 	return &emplaceUpdate[K, V]{new: operand}
 }
 
+var _ DataField[string] = customUpdate[string]{}
+
 type customUpdate[T any] struct {
-	dataFallback[T]
+	dataField[T]
 	change func(T) T
 }
 
-func (u customUpdate[T]) update(original T) T {
-	return u.change(original)
+func (u customUpdate[T]) set(original reflect.Value) reflect.Value {
+	value, _ := original.Interface().(T)
+	return reflect.ValueOf(newData(u.change(value)))
 }
+
+var _ DataField[string] = setUpdate[string]{}
 
 type setUpdate[T any] struct {
-	dataFallback[T]
+	dataField[T]
 	new T
 }
 
-func (u setUpdate[T]) update(original T) T {
-	return u.new
+func (u setUpdate[T]) set(_ reflect.Value) reflect.Value {
+	return reflect.ValueOf(newData(u.new))
 }
+
+var _ DataField[float64] = incrementUpdate[float64]{}
 
 type incrementUpdate[T int | float64 | time.Duration] struct {
-	dataFallback[T]
+	dataField[T]
 	new T
 }
 
-func (u incrementUpdate[T]) update(original T) T {
-	return u.new + original
+func (u incrementUpdate[T]) set(original reflect.Value) reflect.Value {
+	value, _ := original.Interface().(T)
+	return reflect.ValueOf(newData(u.new + value))
 }
+
+var _ DataField[float64] = multiplyUpdate[float64]{}
 
 type multiplyUpdate[T int | float64 | time.Duration] struct {
-	dataFallback[T]
+	dataField[T]
 	new T
 }
 
-func (u multiplyUpdate[T]) update(original T) T {
-	return u.new * original
+func (u multiplyUpdate[T]) set(original reflect.Value) reflect.Value {
+	value, _ := original.Interface().(T)
+	return reflect.ValueOf(newData(u.new * value))
 }
+
+var _ DataField[bool] = toggleUpdate[bool]{}
 
 type toggleUpdate[T bool] struct {
-	dataFallback[T]
+	dataField[T]
 }
 
-func (u toggleUpdate[T]) update(original T) T {
-	return !original
+func (u toggleUpdate[T]) set(original reflect.Value) reflect.Value {
+	value, _ := original.Interface().(T)
+	return reflect.ValueOf(newData(!value))
 }
+
+var _ DataField[time.Time] = addUpdate[time.Time]{}
 
 type addUpdate[T time.Time] struct {
-	dataFallback[T]
+	dataField[T]
 	add time.Duration
 }
 
-func (u addUpdate[T]) update(original T) T {
-	if originalTime, ok := any(original).(time.Time); ok {
-		return T(originalTime.Add(u.add))
-	}
-	return original
+func (u addUpdate[T]) set(original reflect.Value) reflect.Value {
+	value, _ := original.Interface().(time.Time)
+	return reflect.ValueOf(newData(value.Add(u.add)))
 }
 
+var _ DataField[[]string] = appendUpdate[string]{}
+
 type appendUpdate[T any] struct {
-	dataFallback[[]T]
+	dataField[[]T]
 	new []T
 }
 
-func (u appendUpdate[T]) update(original []T) []T {
-	return append(original, u.new...)
+func (u appendUpdate[T]) set(original reflect.Value) reflect.Value {
+	value, _ := original.Interface().([]T)
+	return reflect.ValueOf(newData(append(value, u.new...)))
 }
 
+var _ DataField[[]string] = removeUpdate[string]{}
+
 type removeUpdate[T comparable] struct {
-	dataFallback[[]T]
+	dataField[[]T]
 	remove map[T]bool
 }
 
-func (u removeUpdate[T]) update(original []T) []T {
-	newSlice := make([]T, 0, len(original))
-	for _, item := range original {
+func (u removeUpdate[T]) set(original reflect.Value) reflect.Value {
+	value, _ := original.Interface().([]T)
+	newSlice := make([]T, 0, len(value))
+	for _, item := range value {
 		if u.remove[item] {
 			continue
 		}
 		newSlice = append(newSlice, item)
 	}
-	return newSlice
+	return reflect.ValueOf(newData(newSlice))
 }
 
+var _ DataField[map[string]string] = emplaceUpdate[string, string]{}
+
 type emplaceUpdate[K comparable, V any] struct {
-	dataFallback[map[K]V]
+	dataField[map[K]V]
 	new map[K]V
 }
 
-func (u emplaceUpdate[K, V]) update(original map[K]V) map[K]V {
-	if original == nil {
-		original = make(map[K]V)
+func (u emplaceUpdate[K, V]) set(original reflect.Value) reflect.Value {
+	value, _ := original.Interface().(map[K]V)
+	if value == nil {
+		value = make(map[K]V)
 	}
-	maps.Copy(original, u.new)
-	return original
+	maps.Copy(value, u.new)
+	return reflect.ValueOf(newData(value))
 }

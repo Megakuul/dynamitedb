@@ -24,6 +24,7 @@ func TestModelFilter(t *testing.T) {
 		TestBool:   Set(false),
 		TestSlice:  Set([]string{"bombaclad", "ananas", "banana"}),
 		TestMap:    Set(map[string]string{"bombaclad": "yes", "ananas": "absolutely", "banana": "yessir"}),
+		TestCustom: Set(Custom("ananas")),
 
 		TestUnmodified: Set("unmodified"),
 	}))
@@ -48,6 +49,7 @@ func TestModelFilter(t *testing.T) {
 		TestBool:   Eq(false),
 		TestSlice:  Eq([]string{"bombaclad", "ananas", "banana"}),
 		TestMap:    Eq(map[string]string{"bombaclad": "yes", "ananas": "absolutely", "banana": "yessir"}),
+		TestCustom: Eq(Custom("ananas")),
 
 		TestUnmodified: NotEq("modified"),
 	}

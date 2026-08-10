@@ -7,7 +7,6 @@ import (
 	"io"
 	"math"
 	"reflect"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -170,59 +169,24 @@ func checkFilter(original, filter reflect.Value) bool {
 		switch field.Type {
 		case reflect.TypeFor[KeyField](), reflect.TypeFor[ETagField]():
 			continue
-		case reflect.TypeFor[DataField[string]]():
-			if !checkFieldFilter[string](original, filter, field.Index) {
+		}
+
+		if fieldFilter, ok := filter.FieldByIndex(field.Index).Interface().(filterable); ok {
+			originalValue, ok := original.FieldByIndex(field.Index).Interface().(gettable)
+			if !ok {
 				return false
 			}
-		case reflect.TypeFor[DataField[int]]():
-			if !checkFieldFilter[int](original, filter, field.Index) {
-				return false
-			}
-		case reflect.TypeFor[DataField[float64]]():
-			if !checkFieldFilter[float64](original, filter, field.Index) {
-				return false
-			}
-		case reflect.TypeFor[DataField[bool]]():
-			if !checkFieldFilter[bool](original, filter, field.Index) {
-				return false
-			}
-		case reflect.TypeFor[DataField[time.Time]]():
-			if !checkFieldFilter[time.Time](original, filter, field.Index) {
-				return false
-			}
-		case reflect.TypeFor[DataField[time.Duration]]():
-			if !checkFieldFilter[time.Duration](original, filter, field.Index) {
-				return false
-			}
-		case reflect.TypeFor[DataField[[]string]]():
-			if !checkFieldFilter[[]string](original, filter, field.Index) {
-				return false
-			}
-		case reflect.TypeFor[DataField[map[string]string]]():
-			if !checkFieldFilter[map[string]string](original, filter, field.Index) {
-				return false
-			}
-		default:
-			if !checkFilter(
-				original.FieldByIndex(field.Index),
-				filter.FieldByIndex(field.Index),
-			) {
+			if !fieldFilter.filter(originalValue.value()) {
 				return false
 			}
 		}
+
+		if !checkFilter(
+			original.FieldByIndex(field.Index),
+			filter.FieldByIndex(field.Index),
+		) {
+			return false
+		}
 	}
 	return true
-}
-
-// checkFieldFilter applies the filter to original and returns whether it matches.
-func checkFieldFilter[T any](original, filter reflect.Value, index []int) bool {
-	filterField, ok := filter.FieldByIndex(index).Interface().(DataField[T])
-	if !ok {
-		return true
-	}
-	originalField, ok := original.FieldByIndex(index).Interface().(DataField[T])
-	if !ok {
-		return false
-	}
-	return filterField.filter(reflect.ValueOf(originalField.Value()))
 }

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"reflect"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -109,51 +108,24 @@ func applyUpdate(original, update reflect.Value) {
 			continue
 		}
 		switch field.Type {
-		case reflect.TypeFor[KeyField]():
+		case reflect.TypeFor[KeyField](), reflect.TypeFor[ETagField]():
 			continue
-		case reflect.TypeFor[DataField[string]]():
-			applyFieldUpdate[string](original, update, field.Index)
-		case reflect.TypeFor[DataField[int]]():
-			applyFieldUpdate[int](original, update, field.Index)
-		case reflect.TypeFor[DataField[float64]]():
-			applyFieldUpdate[float64](original, update, field.Index)
-		case reflect.TypeFor[DataField[bool]]():
-			applyFieldUpdate[bool](original, update, field.Index)
-		case reflect.TypeFor[DataField[time.Time]]():
-			applyFieldUpdate[time.Time](original, update, field.Index)
-		case reflect.TypeFor[DataField[time.Duration]]():
-			applyFieldUpdate[time.Duration](original, update, field.Index)
-		case reflect.TypeFor[DataField[[]string]]():
-			applyFieldUpdate[[]string](original, update, field.Index)
-		case reflect.TypeFor[DataField[map[string]string]]():
-			applyFieldUpdate[map[string]string](original, update, field.Index)
-		default:
-			if field.Type.Kind() == reflect.Pointer || field.Type.Kind() == reflect.Struct {
-				applyUpdate(
-					original.FieldByIndex(field.Index),
-					update.FieldByIndex(field.Index),
-				)
+		}
+		if fieldUpdate, ok := update.FieldByIndex(field.Index).Interface().(settable); ok {
+			originalField := original.FieldByIndex(field.Index)
+			originalValue, ok := originalField.Interface().(gettable)
+			if !ok { // this means the field is not initialized / nil
+				originalField.Set(fieldUpdate.set(reflect.Zero(field.Type)))
+			} else {
+				originalField.Set(fieldUpdate.set(originalValue.value()))
 			}
 			continue
 		}
+		if field.Type.Kind() == reflect.Pointer || field.Type.Kind() == reflect.Struct {
+			applyUpdate(
+				original.FieldByIndex(field.Index),
+				update.FieldByIndex(field.Index),
+			)
+		}
 	}
-}
-
-// applyFieldUpdate applies the defined update operation from "update" to "original".
-func applyFieldUpdate[T any](original, update reflect.Value, index []int) {
-	updateField, ok := update.FieldByIndex(index).Interface().(DataField[T])
-	if !ok {
-		return
-	}
-	originalField, ok := original.FieldByIndex(index).Interface().(DataField[T])
-	if !ok {
-		var new T
-		original.FieldByIndex(index).Set(reflect.ValueOf(
-			newData(updateField.update(new))),
-		)
-		return
-	}
-	original.FieldByIndex(index).Set(reflect.ValueOf(
-		newData(updateField.update(originalField.Value()))),
-	)
 }

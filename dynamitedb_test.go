@@ -2,6 +2,8 @@ package dynamitedb
 
 import "time"
 
+type Custom string
+
 type Test struct {
 	PartID       KeyField                     `pk:"part" cbor:"-"`
 	SortID       KeyField                     `sk:"sort" cbor:"-"`
@@ -14,6 +16,7 @@ type Test struct {
 	TestBool     DataField[bool]              `cbor:"test_bool,omitempty"`
 	TestTime     DataField[time.Time]         `cbor:"test_time,omitempty"`
 	TestDuration DataField[time.Duration]     `cbor:"test_duration,omitempty"`
+	TestCustom   DataField[Custom]            `cbor:"test_custom,omitempty"`
 
 	TestUnmodified DataField[string]            `cbor:"test_unmodified,omitempty"`
 	TestNil        DataField[string]            `cbor:"test_nil,omitempty"`
