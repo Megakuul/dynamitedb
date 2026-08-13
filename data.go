@@ -18,6 +18,8 @@ type DataField[T any] interface {
 	filterable
 	// Value returns the raw data value.
 	Value() T
+	// zero is a marker for reflection to instantiate a data zerovalue.
+	zero() data[T] // <- reflection needs to know this type
 }
 
 var _ DataField[string] = dataField[string]{}
@@ -40,6 +42,10 @@ func (dataField[T]) set(reflect.Value) reflect.Value {
 
 func (dataField[T]) filter(reflect.Value) bool {
 	panic("incorrect DataField usage: cannot use filter from update or value operator")
+}
+
+func (d dataField[T]) zero() data[T] {
+	panic("this should never execute")
 }
 
 func newData[T any](v T) *data[T] {

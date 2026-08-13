@@ -12,6 +12,7 @@ go get github.com/megakuul/dynamitedb
 type OrderItem struct {
 	OrderId     dynamitedb.KeyField          `pk:"order" cbor:"-"`
 	ItemId      dynamitedb.KeyField          `sk:"item" cbor:"-"`
+    ETag        dynamitedb.ETagField         `etag:"true" cbor:"-"`
 	Hidden      dynamitedb.DataField[bool]   `cbor:"hidden,omitempty"`
 	Name        dynamitedb.DataField[string] `cbor:"name,omitempty"`
 	Description dynamitedb.DataField[string] `cbor:"description,omitempty"`
@@ -101,27 +102,41 @@ type OrderItem struct {
 }
 ```
 
+### ETagField
+
+ETagField is automatically populated if you retrieve data and can be set on updates to ensure the object didn't change in the meantime.
+
+```go
+deliveryNote, err := dynamitedb.Get(ctx, bucket, &DeliveryNote{
+    DeliveryNoteID: dynamitedb.Key("019ffc9b-6bdb-7983-a78f-4b98f55ea7ef"),
+})
+if err != nil {
+    return err
+}
+
+time.Sleep(time.Hour)
+
+err = dynamitedb.Delete(ctx, bucket, &DeliveryNote{
+    DeliveryNoteID: dynamitedb.Key(deliveryNote.DeliveryNoteID.Value()),
+    ETag:           deliveryNote.ETag,
+})
+if err != nil {
+    if errors.Is(err, ErrConcurrencyConflict) {
+        // this happens if someone changed the document since you called Get.
+    }
+    return err
+}
+```
+
 ### DataFields
 
-DataFields are used for mutable data. They are generic and only allow a certain set of types defined as `dataConstraint` in [data.go](/data.go):
-
-- `string`
-- `int`
-- `float64`
-- `bool`
-- `time.Time`
-- `time.Duration`
-- `[]string`
-- `map[string]string`
-
-Since serialization is handled transparently by a cbor marshaller you can also use any other marshallable type on the schema.
-However, all fields that are not DataFields become immutable after insertion and cannot be changed or filtered!
+DataFields are used for mutable data. Because serialization is handled transparently by the `cbor` marshaller you can also just add other fields to your object, however, those fields will become static and cannot be changed/filtered after creation!
 
 ```go
 type OrderItem struct {
     OrderId  dynamitedb.KeyField `pk:"order" cbor:"-"`
     ItemId   dynamitedb.KeyField `sk:"item" cbor:"-"`
-    StaticId uuid.UUID           `cbor:"static_id"` // <- this is allowed but immutable and non-filterable
+    StaticId uuid.UUID           `cbor:"static_id,omitempty"` // <- this is allowed but immutable and non-filterable
 }
 ```
 
@@ -129,16 +144,17 @@ Nested datafields in structs are also allowed:
 
 ```go
 type Description struct {
-    Title   dynamitedb.DataField[string] `cbor:"title"`
-    Tooltip dynamitedb.DataField[string] `cbor:"tooltip"`
-    Text    dynamitedb.DataField[string] `cbor:"text"`
+    Title   dynamitedb.DataField[string] `cbor:"title,omitempty"`
+    Tooltip dynamitedb.DataField[string] `cbor:"tooltip,omitempty"`
+    Text    dynamitedb.DataField[string] `cbor:"text,omitempty"`
 }
 
 type OrderItem struct {
     OrderId     dynamitedb.KeyField            `pk:"order" cbor:"-"`
     ItemId      dynamitedb.KeyField            `sk:"item" cbor:"-"`
-    Description Description                    `cbor:"description"` // <- this is allowed
-    Invalid     []dynamitedb.DataField[string] `cbor:"invalid"`     // <- this is NOT allowed
+    Description Description                    `cbor:"description,omitempty"` // <- this is allowed
+    Invalid     []dynamitedb.DataField[string] `cbor:"invalid,omitempty"`     // <- this is NOT allowed
+    Valid       dynamitedb.DataField[[]Custom] `cbor:"valid,omitempty"`
 }
 ```
 

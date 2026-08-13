@@ -2,7 +2,6 @@ package dynamitedb
 
 import (
 	"reflect"
-	"time"
 
 	"github.com/fxamacker/cbor/v2"
 )
@@ -57,28 +56,20 @@ func initModel(model reflect.Value) {
 		if !field.IsExported() {
 			continue
 		}
-		fieldVal := model.FieldByIndex(field.Index)
+		fieldValue := model.FieldByIndex(field.Index)
+
+		method, ok := field.Type.MethodByName("zero")
+		if ok {
+			fieldValue.Set(reflect.New(method.Type.Out(0)))
+			continue
+		}
 		switch field.Type {
 		case reflect.TypeFor[KeyField]():
-			fieldVal.Set(reflect.ValueOf(Key("")))
-		case reflect.TypeFor[DataField[string]]():
-			fieldVal.Set(reflect.ValueOf(newData("")))
-		case reflect.TypeFor[DataField[int]]():
-			fieldVal.Set(reflect.ValueOf(newData(0)))
-		case reflect.TypeFor[DataField[float64]]():
-			fieldVal.Set(reflect.ValueOf(newData(0.0)))
-		case reflect.TypeFor[DataField[bool]]():
-			fieldVal.Set(reflect.ValueOf(newData(false)))
-		case reflect.TypeFor[DataField[time.Time]]():
-			fieldVal.Set(reflect.ValueOf(newData(time.Time{})))
-		case reflect.TypeFor[DataField[time.Duration]]():
-			fieldVal.Set(reflect.ValueOf(newData(time.Duration(0))))
-		case reflect.TypeFor[DataField[[]string]]():
-			fieldVal.Set(reflect.ValueOf(newData([]string{})))
-		case reflect.TypeFor[DataField[map[string]string]]():
-			fieldVal.Set(reflect.ValueOf(newData(map[string]string{})))
+			fieldValue.Set(reflect.ValueOf(Key("")))
+		case reflect.TypeFor[ETagField]():
+			fieldValue.Set(reflect.Zero(reflect.TypeFor[ETagField]()))
 		default:
-			initModel(model.FieldByIndex(field.Index))
+			initModel(fieldValue)
 		}
 	}
 }

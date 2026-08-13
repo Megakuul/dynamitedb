@@ -64,7 +64,7 @@ func checkWorkflow(t *testing.T, bucket *dynamitedb.Bucket) {
 		TestTime:     dynamitedb.After(now),
 		TestDuration: dynamitedb.LessOrEqThan(time.Hour * 2),
 		TestNil:      dynamitedb.Eq(""),
-		TestNilMap:   dynamitedb.Eq(map[string]string{}),
+		TestNilMap:   dynamitedb.Eq(map[string]string(nil)),
 	})
 	if err != nil {
 		t.Fatal(err)
