@@ -37,7 +37,7 @@ func deserialize[T any](data []byte) (*T, error) {
 	if err := decoder.Unmarshal(data, new); err != nil {
 		return nil, err
 	}
-	// patchModel(newVal)
+	patchModel(newVal)
 
 	return new, nil
 }
