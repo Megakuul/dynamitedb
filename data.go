@@ -49,7 +49,7 @@ func (d dataField[T]) zero() data[T] {
 }
 
 func newData[T any](v T) *data[T] {
-	return &data[T]{data: v}
+	return &data[T]{Data: v}
 }
 
 var _ DataField[string] = data[string]{}
@@ -57,15 +57,15 @@ var _ DataField[string] = data[string]{}
 // internal data interface used only for returned values.
 type data[T any] struct {
 	dataField[T]
-	data T
+	Data T `cbor:"data"`
 }
 
 func (v data[T]) Value() T {
-	return v.data
+	return v.Data
 }
 
 func (v data[T]) value() reflect.Value {
-	return reflect.ValueOf(v.data)
+	return reflect.ValueOf(v.Data)
 }
 
 func (v *data[T]) UnmarshalCBOR(data []byte) error {
@@ -73,10 +73,10 @@ func (v *data[T]) UnmarshalCBOR(data []byte) error {
 	if err != nil {
 		return err
 	}
-	v.data = *newKey
+	v.Data = *newKey
 	return nil
 }
 
 func (v data[T]) MarshalCBOR() ([]byte, error) {
-	return serialize(v.data)
+	return serialize(v.Data)
 }

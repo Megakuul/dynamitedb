@@ -7,7 +7,8 @@ import (
 )
 
 var encoderOpts = cbor.EncOptions{
-	Time: cbor.TimeRFC3339Nano,
+	Time:      cbor.TimeRFC3339Nano,
+	OmitEmpty: cbor.OmitEmptyGoValue,
 }
 
 var decoderOpts = cbor.DecOptions{
@@ -36,6 +37,8 @@ func deserialize[T any](data []byte) (*T, error) {
 	if err := decoder.Unmarshal(data, new); err != nil {
 		return nil, err
 	}
+	// patchModel(newVal)
+
 	return new, nil
 }
 
@@ -71,5 +74,32 @@ func initModel(model reflect.Value) {
 		default:
 			initModel(fieldValue)
 		}
+	}
+}
+
+// patchModel traverses the provided model and sets all DataFields that are set to nil with a default value.
+// Patch is used to avoid nil DataFields which the cbor decoder writes in case it stores the column as "null".
+// This happens if the library user does either not use "omitempty" or manually inserts cbor null values.
+func patchModel(model reflect.Value) {
+	if model.Kind() == reflect.Pointer {
+		patchModel(model.Elem())
+		return
+	} else if model.Kind() != reflect.Struct {
+		return
+	}
+	for field := range model.Fields() {
+		if !field.IsExported() {
+			continue
+		}
+		fieldValue := model.FieldByIndex(field.Index)
+		// isNil check + interface heuristic first to avoid expensive MethodByName call on most fields.
+		if field.Type.Kind() == reflect.Interface && fieldValue.IsNil() {
+			method, ok := field.Type.MethodByName("zero")
+			if ok {
+				fieldValue.Set(reflect.New(method.Type.Out(0)))
+				continue
+			}
+		}
+		patchModel(fieldValue)
 	}
 }

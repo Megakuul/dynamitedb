@@ -23,6 +23,7 @@ func checkWorkflow(t *testing.T, bucket *dynamitedb.Bucket) {
 		TestMap:      dynamitedb.Emplace(map[string]string{"test": "true"}),
 		TestTime:     dynamitedb.Set(now),
 		TestDuration: dynamitedb.Set(time.Hour),
+		TestNilMap:   dynamitedb.Set[map[string]string](nil),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -48,7 +49,7 @@ func checkWorkflow(t *testing.T, bucket *dynamitedb.Bucket) {
 		t.Fatal(err)
 	}
 
-	_, err = dynamitedb.Get(t.Context(), bucket, &Test{
+	result, err := dynamitedb.Get(t.Context(), bucket, &Test{
 		PartID:     dynamitedb.Key("workflow"),
 		SortID:     dynamitedb.Key("69"),
 		TestString: dynamitedb.Includes("pdated Bombacla"),
@@ -68,5 +69,9 @@ func checkWorkflow(t *testing.T, bucket *dynamitedb.Bucket) {
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	if len(result.TestNilMap.Value()) != 0 {
+		t.Fatal("test nil map not properly initialized")
 	}
 }

@@ -34,6 +34,17 @@ type Test struct {
 	TestUnmodified dynamitedb.DataField[string]            `cbor:"test_unmodified,omitempty"`
 	TestNil        dynamitedb.DataField[string]            `cbor:"test_nil,omitempty"`
 	TestNilMap     dynamitedb.DataField[map[string]string] `cbor:"test_nil_map,omitempty"`
+
+	TestMigrationMap dynamitedb.DataField[map[string]string] `cbor:"test_migration_map"`
+}
+
+type TestMigrated struct {
+	PartID dynamitedb.KeyField  `pk:"part" cbor:"-"`
+	SortID dynamitedb.KeyField  `sk:"sort" cbor:"-"`
+	ETag   dynamitedb.ETagField `etag:"true" cbor:"-"`
+
+	TestMigrationMap    dynamitedb.DataField[map[string]string] `cbor:"test_migration_map"`
+	TestNewMigrationMap dynamitedb.DataField[map[string]string] `cbor:"test_new_migration_map"`
 }
 
 type NestedTest struct {
@@ -95,5 +106,9 @@ func TestOperations(t *testing.T) {
 
 	t.Run("query operations", func(t *testing.T) {
 		checkQueries(t, bucket)
+	})
+
+	t.Run("table migration", func(t *testing.T) {
+		checkMigration(t, bucket)
 	})
 }
