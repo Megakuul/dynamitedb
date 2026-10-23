@@ -255,7 +255,6 @@ Some operational backend inspiration:
 
 - [RustFS](https://github.com/rustfs/rustfs) (simple s3 with cool webui)
 - [Alarik](https://github.com/achtungsoftware/alarik) (simple s3 with cool webui (alpha))
-- [SeaweedFS](https://github.com/seaweedfs/seaweedfs) (battletested and not too complex)
 - [Ceph Rados Gateway](https://docs.ceph.com/en/reef/radosgw/) (battletested for massive workloads)
 
 > [!WARNING]
